@@ -1,0 +1,14 @@
+-- Database Schema Definition for Nifty 100 ETL Pipeline
+
+-- Example Schema:
+-- CREATE TABLE IF NOT EXISTS nifty100_data (
+--     id INTEGER PRIMARY KEY AUTOINCREMENT,
+--     symbol TEXT NOT NULL,
+--     trade_date DATE NOT NULL,
+--     open_price REAL,
+--     high_price REAL,
+--     low_price REAL,
+--     close_price REAL,
+--     volume INTEGER,
+--     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+-- );
