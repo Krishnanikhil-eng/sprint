@@ -1,7 +1,30 @@
-.env
-*.db
-__pycache__/
-*.pyc
+# Virtual environments
 .venv/
 venv/
+ENV/
+
+# Python cache & compiled files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+
+# Environment configuration & secrets
+.env
+.env.*
+!.env.example
+
+# Output directories & build artifacts
+output/
+project/output/
+
+# Database files
+# Note: If nifty100.db is required as a final deliverable, add '!nifty100.db' or '!project/nifty100.db' below.
+*.db
+*.sqlite3
+
+# IDE & Jupyter Notebook artifacts
+.vscode/
+.idea/
 .ipynb_checkpoints/
