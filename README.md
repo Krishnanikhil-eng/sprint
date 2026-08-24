@@ -1,6 +1,12 @@
 # Nifty 100 Data Foundation — ETL Pipeline & Normalisation
 
-Sprint 1 ETL Data Foundation pipeline for processing Nifty 100 financial datasets. This repository contains the core normalisation engine, Excel data loader, unit test suite, and project structure for ETL pipeline development.
+Sprint 1 ETL Data Foundation pipeline for processing Nifty 100 financial datasets. This repository contains the core normalisation engine, Excel data loader, unit test suite, SQLite database schema (`nifty100.db`), data quality validation engine (DQ-01 to DQ-16), and project structure for ETL pipeline development.
+
+---
+
+## 📄 Sprint 1 Complete Audit Report
+For the complete, independent audit report of Sprint 1 (Data Foundation), including schema design details, ingestion statistics, data quality results, and Definition of Done verification, see:
+👉 **[`docs/sprint1_data_foundation_audit.md`](docs/sprint1_data_foundation_audit.md)**
 
 ---
 
@@ -10,23 +16,28 @@ Sprint 1 ETL Data Foundation pipeline for processing Nifty 100 financial dataset
 project/
 ├── src/
 │   └── etl/
-│       ├── loader.py        # Excel data loading & header cleaning
+│       ├── loader.py        # Excel data loading & full ETL pipeline execution
 │       ├── normaliser.py    # Year & Ticker normalisation logic
-│       └── validator.py     # Schema & data validation (Sprint 1)
+│       └── validator.py     # Schema & DQ-01..DQ-16 data quality validator
 ├── db/
-│   └── schema.sql           # Database schema definition
+│   └── schema.sql           # 12-table database schema definition
+├── docs/
+│   └── sprint1_data_foundation_audit.md # Complete Sprint 1 Audit Report
 ├── tests/
 │   └── etl/
 │       ├── test_loader.py   # Unit tests for loader module
-│       └── test_normaliser.py # 43+ unit tests for normaliser module
-├── output/                  # Directory for generated outputs & logs
-├── notebooks/               # Data exploration & analysis notebooks
-├── data/                    # Raw input Excel data files (.xlsx)
+│       ├── test_normaliser.py # Unit tests for normaliser module
+│       ├── test_validator.py  # Unit tests for validator engine & DQ rules
+│       └── test_db_loader.py  # Unit tests for database loading & audit CSV
+├── output/                  # Generated audit CSVs & validation logs
+├── notebooks/               # SQL exploratory queries (`exploratory_queries.sql`)
+├── data/                    # Raw input Excel data files (.xlsx & zip)
 ├── .env                     # Environment variables configuration
 ├── .gitignore               # Git exclusion patterns
 ├── Makefile                 # Automation task commands
+├── pyproject.toml           # Pytest & package configuration
 ├── requirements.txt         # Project dependencies (pinned)
-└── nifty100.db              # SQLite target database
+└── nifty100.db              # SQLite target database (12 tables)
 ```
 
 ---
@@ -55,56 +66,26 @@ pip install -r requirements.txt
 
 ---
 
-## ⚙️ Core Modules
+## ⚙️ Core Commands & Tasks
 
-### 1. `src/etl/normaliser.py`
-
-Contains normalisation functions for cleaning raw dataset fields:
-
-- **`normalize_year(value)`**:
-  Converts standard years (`2023`, `"2023"`), floats (`2023.0`), and date strings (`"Dec 2012"`, `"Mar-13"`, `"FY 2023"`) into consistent 4-digit integer years within `1900`–`2100`. Returns `None` for invalid or missing values (`None`, `NaN`, empty strings, invalid text, negative values, booleans).
-
-- **`normalize_ticker(value)`**:
-  Trims whitespace and converts stock ticker symbols to uppercase format (e.g., `" reliance "` → `"RELIANCE"`). Preserves exchange suffixes like `.NS` or `.BO` (e.g., `"tcs.ns"` → `"TCS.NS"`). Returns `None` for invalid or non-string inputs.
-
-### 2. `src/etl/loader.py`
-
-- **`load_excel(file_path)`**:
-  Loads source `.xlsx` files using `pandas` and `openpyxl`. Automatically detects top-row banner headers (e.g. *"Bluestock Fintech..."*), cleans column names to lowercase `snake_case`, and applies `normalize_year()` and `normalize_ticker()` rules to relevant columns (`year`, `company_id`, `ticker`).
+| Command | Target | Description |
+| :--- | :--- | :--- |
+| `make load` | `python -m src.etl.loader` | Run full ETL pipeline and populate `nifty100.db` |
+| `make test` | `pytest` | Run complete unit test suite (59 passing tests) |
+| `make report` | `python -m src.etl.validator` | Run DQ validator engine & export validation report |
+| `make clean` | `clean` | Remove temporary cache files |
 
 ---
 
 ## 🧪 Testing
 
-The repository features a test suite with 48 unit tests covering edge cases and real dataset verification.
+The repository features a unit test suite with 59 tests covering normalization edge cases, loader pipeline execution, validator rules, and database schema referential integrity.
 
 Run tests using `pytest`:
 
 ```bash
 pytest
 ```
-
-Or using `make`:
-
-```bash
-make test
-```
-
-### Test Coverage Highlights
-- **24 tests** for `normalize_year()` (integers, strings, floats, date strings, `None`, `NaN`, invalid text, range bounds, booleans).
-- **19 tests** for `normalize_ticker()` (case sensitivity, whitespace trimming, `.NS`/`.BO` exchange suffixes, invalid types).
-- **5 tests** for `load_excel()` (missing files, column cleaning, banner header stripping, fixture data, real Excel loading).
-
----
-
-## 🛠️ Makefile Commands
-
-| Command | Description |
-| :--- | :--- |
-| `make install` | Install dependencies from `requirements.txt` |
-| `make test` | Run the complete unit test suite (`pytest`) |
-| `make run` | Execute the ETL loader pipeline |
-| `make clean` | Remove Python cache and compiled files |
 
 ---
 
