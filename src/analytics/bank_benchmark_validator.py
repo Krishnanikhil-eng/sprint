@@ -35,7 +35,7 @@ def validate_bank_carveout_rules(db_path: str = 'nifty100.db') -> Dict[str, Any]
     non_fin_flagged = (non_fin_over_5['high_leverage_flag'] == 1).sum()
     non_fin_total_over_5 = len(non_fin_over_5)
     
-    passed = (fin_roce_non_null == 0) and (fin_high_lev_active == 0) and (non_fin_flagged == non_fin_total_over_5)
+    passed = bool((fin_roce_non_null == 0) and (fin_high_lev_active == 0) and (non_fin_flagged == non_fin_total_over_5))
     
     print("===================================================================================")
     print("               BANK SECTOR CARVE-OUT & BENCHMARK AUDIT                            ")
@@ -52,7 +52,7 @@ def validate_bank_carveout_rules(db_path: str = 'nifty100.db') -> Dict[str, Any]
         'fin_roce_non_null_count': int(fin_roce_non_null),
         'fin_high_leverage_active_count': int(fin_high_lev_active),
         'non_fin_flagged_count': int(non_fin_flagged),
-        'passed': passed
+        'passed': bool(passed)
     }
 
 if __name__ == '__main__':
