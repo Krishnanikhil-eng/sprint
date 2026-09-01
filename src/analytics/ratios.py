@@ -57,8 +57,10 @@ def calculate_roce(
     """
     Return on Capital Employed (ROCE) = EBIT / (equity + reserves + borrowings) * 100
     Rule: capital_employed <= 0 -> None
-    For Financials: ROCE is benchmarked relative to sector benchmark.
+    For Financials: ROCE is suppressed (returns None) because deposits/borrowings form core operating assets.
     """
+    if is_financials:
+        return None
     if ebit is None or equity_capital is None or reserves is None or borrowings is None:
         return None
     capital_employed = equity_capital + reserves + borrowings
