@@ -124,3 +124,30 @@ class ScreenerEngine:
         logger.info(f"Applied {len(self.config.criteria)} criteria: {len(filtered)} / {len(df)} companies passed.")
         return filtered
 
+    def filter_by_core_ratios(self,
+                              min_roe: Optional[float] = None,
+                              max_de: Optional[float] = None,
+                              min_fcf: Optional[float] = None,
+                              df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
+        """
+        Convenience method to quickly filter companies by core pillar metrics:
+        Return on Equity (%), Debt to Equity, and Free Cash Flow (Cr).
+        """
+        if df is None:
+            if self.raw_data is None:
+                self.load_latest_company_ratios()
+            df = self.raw_data.copy()
+
+        criteria = []
+        if min_roe is not None:
+            criteria.append(FilterCriterion("return_on_equity_pct", FilterOperator.GREATER_EQUAL, value=min_roe, description=f"ROE >= {min_roe}%"))
+        if max_de is not None:
+            criteria.append(FilterCriterion("debt_to_equity", FilterOperator.LESS_EQUAL, value=max_de, description=f"D/E <= {max_de}"))
+        if min_fcf is not None:
+            criteria.append(FilterCriterion("free_cash_flow_cr", FilterOperator.GREATER_EQUAL, value=min_fcf, description=f"FCF >= {min_fcf} Cr"))
+
+        config = ScreenerConfig(name="Core Ratios Quick Filter", description="Filtering by ROE, D/E, and FCF", criteria=criteria)
+        self.set_config(config)
+        return self.apply_filters(df)
+
+
