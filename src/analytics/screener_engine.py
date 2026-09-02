@@ -150,4 +150,45 @@ class ScreenerEngine:
         self.set_config(config)
         return self.apply_filters(df)
 
+    def filter_by_multi_metrics(self,
+                                min_npm: Optional[float] = None,
+                                min_opm: Optional[float] = None,
+                                min_roce: Optional[float] = None,
+                                min_roa: Optional[float] = None,
+                                min_asset_turnover: Optional[float] = None,
+                                min_rev_cagr: Optional[float] = None,
+                                min_pat_cagr: Optional[float] = None,
+                                min_dividend_payout: Optional[float] = None,
+                                df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
+        """
+        Filters data across profitability margins, capital efficiency, turnover, and growth CAGRs.
+        """
+        if df is None:
+            if self.raw_data is None:
+                self.load_latest_company_ratios()
+            df = self.raw_data.copy()
+
+        criteria = []
+        if min_npm is not None:
+            criteria.append(FilterCriterion("net_profit_margin_pct", FilterOperator.GREATER_EQUAL, value=min_npm))
+        if min_opm is not None:
+            criteria.append(FilterCriterion("operating_profit_margin_pct", FilterOperator.GREATER_EQUAL, value=min_opm))
+        if min_roce is not None:
+            criteria.append(FilterCriterion("roce_pct", FilterOperator.GREATER_EQUAL, value=min_roce))
+        if min_roa is not None:
+            criteria.append(FilterCriterion("roa_pct", FilterOperator.GREATER_EQUAL, value=min_roa))
+        if min_asset_turnover is not None:
+            criteria.append(FilterCriterion("asset_turnover", FilterOperator.GREATER_EQUAL, value=min_asset_turnover))
+        if min_rev_cagr is not None:
+            criteria.append(FilterCriterion("revenue_cagr_5yr", FilterOperator.GREATER_EQUAL, value=min_rev_cagr))
+        if min_pat_cagr is not None:
+            criteria.append(FilterCriterion("pat_cagr_5yr", FilterOperator.GREATER_EQUAL, value=min_pat_cagr))
+        if min_dividend_payout is not None:
+            criteria.append(FilterCriterion("dividend_payout_ratio_pct", FilterOperator.GREATER_EQUAL, value=min_dividend_payout))
+
+        config = ScreenerConfig(name="Multi-Metric Advanced Filter", description="Filtering margins, return ratios, turnover, and CAGRs", criteria=criteria)
+        self.set_config(config)
+        return self.apply_filters(df)
+
+
 
