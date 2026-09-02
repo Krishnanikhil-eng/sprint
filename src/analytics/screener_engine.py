@@ -243,6 +243,32 @@ class ScreenerEngine:
         df["raw_composite_score"] = raw_score.round(2)
         return df
 
+    def normalize_composite_scores(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Normalizes raw composite scores to a standardized 0-100 scale using Min-Max scaling.
+        If all scores are identical, defaults to 50.0.
+        """
+        if "raw_composite_score" not in df.columns:
+            df = self.compute_raw_composite_score(df)
+        else:
+            df = df.copy()
+
+        if len(df) == 0:
+            df["composite_score"] = pd.Series(dtype=float)
+            return df
+
+        min_s = df["raw_composite_score"].min()
+        max_s = df["raw_composite_score"].max()
+
+        if max_s == min_s:
+            df["composite_score"] = 50.0
+        else:
+            norm = ((df["raw_composite_score"] - min_s) / (max_s - min_s)) * 100.0
+            df["composite_score"] = norm.round(2)
+
+        return df
+
+
 
 
 
