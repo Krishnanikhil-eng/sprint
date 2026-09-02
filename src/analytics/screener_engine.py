@@ -268,6 +268,39 @@ class ScreenerEngine:
 
         return df
 
+    def compute_sector_relative_scores(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Calculates sector-relative composite scores and percentiles within each broad_sector.
+        """
+        if "composite_score" not in df.columns:
+            df = self.normalize_composite_scores(df)
+        else:
+            df = df.copy()
+
+        if len(df) == 0:
+            df["sector_relative_score"] = pd.Series(dtype=float)
+            df["sector_rank"] = pd.Series(dtype=int)
+            return df
+
+        def _score_sector(group):
+            g = group.copy()
+            if len(g) == 1:
+                g["sector_relative_score"] = 100.0
+                g["sector_rank"] = 1
+            else:
+                g["sector_relative_score"] = (g["composite_score"].rank(pct=True) * 100.0).round(2)
+                g["sector_rank"] = g["composite_score"].rank(ascending=False, method="min").astype(int)
+            return g
+
+        if "broad_sector" in df.columns and df["broad_sector"].notnull().any():
+            df = df.groupby("broad_sector", group_keys=False).apply(_score_sector)
+        else:
+            df["sector_relative_score"] = df["composite_score"]
+            df["sector_rank"] = df["composite_score"].rank(ascending=False, method="min").astype(int)
+
+        return df
+
+
 
 
 
