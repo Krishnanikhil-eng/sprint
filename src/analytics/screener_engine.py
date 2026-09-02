@@ -104,8 +104,17 @@ class ScreenerEngine:
                 # Exclude Financials from strict D/E threshold check unless specified otherwise
                 return True
 
+        # Debt-Free ICR handling
+        if criterion.metric_name == "interest_coverage" and self.config and self.config.handle_zero_debt_icr:
+            icr_label = str(row.get("icr_label", "")).upper()
+            total_debt = row.get("total_debt_cr")
+            if icr_label == "DEBT_FREE" or total_debt == 0 or total_debt == 0.0:
+                # Debt-free company automatically satisfies interest coverage requirements
+                return True
+
         val = row.get(criterion.metric_name)
         return criterion.evaluate(val)
+
 
 
     def apply_filters(self, df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
