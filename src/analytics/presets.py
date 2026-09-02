@@ -60,3 +60,29 @@ def get_value_pick_preset() -> ScreenerConfig:
         ascending=False
     )
 
+def get_growth_accelerator_preset() -> ScreenerConfig:
+    """
+    Growth Accelerator Preset:
+    Identifies high-growth compounders expanding both top-line revenue and bottom-line profit.
+    Criteria:
+    - Revenue 5Yr CAGR >= 10%
+    - PAT 5Yr CAGR >= 10%
+    - ROE >= 14%
+    - OPM >= 10%
+    """
+    return ScreenerConfig(
+        name="Growth Accelerator",
+        description="High top-line & bottom-line compounders with expanding profit margins",
+        criteria=[
+            FilterCriterion("revenue_cagr_5yr", FilterOperator.GREATER_EQUAL, value=10.0, description="Revenue CAGR 5Yr >= 10%"),
+            FilterCriterion("pat_cagr_5yr", FilterOperator.GREATER_EQUAL, value=10.0, description="PAT CAGR 5Yr >= 10%"),
+            FilterCriterion("return_on_equity_pct", FilterOperator.GREATER_EQUAL, value=14.0, description="ROE >= 14%"),
+            FilterCriterion("operating_profit_margin_pct", FilterOperator.GREATER_EQUAL, value=10.0, description="OPM >= 10%")
+        ],
+        handle_financials_de=True,
+        handle_zero_debt_icr=True,
+        sort_by="composite_score",
+        ascending=False
+    )
+
+
