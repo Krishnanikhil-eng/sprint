@@ -74,3 +74,40 @@ class PeerEngine:
         finally:
             conn.close()
 
+    def compute_peer_percentiles(self, df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
+        """
+        Computes percentile ranks (0 to 100) for standard metrics within each peer group.
+        Higher numeric values get higher percentile ranks for standard metrics.
+        """
+        if df is None:
+            if self.ratios_df is None:
+                self.load_peer_data()
+            df = self.ratios_df.copy()
+
+        standard_metrics = [
+            "return_on_equity_pct", "roce_pct", "roa_pct",
+            "net_profit_margin_pct", "operating_profit_margin_pct",
+            "asset_turnover", "free_cash_flow_cr", "revenue_cagr_5yr", "pat_cagr_5yr"
+        ]
+
+        def _percentile_group(g):
+            res = g.copy()
+            for metric in standard_metrics:
+                if metric in res.columns and res[metric].notnull().any():
+                    col_name = f"{metric}_percentile"
+                    if len(res) == 1:
+                        res[col_name] = 100.0
+                    else:
+                        res[col_name] = (res[metric].rank(pct=True) * 100.0).round(2)
+            return res
+
+        try:
+            res_df = df.groupby("effective_peer_group", group_keys=False, include_groups=False).apply(_percentile_group)
+        except TypeError:
+            res_df = df.groupby("effective_peer_group", group_keys=False).apply(_percentile_group)
+
+        self.percentiles_df = res_df
+        logger.info(f"Computed standard metric percentiles across {len(res_df)} companies.")
+        return res_df
+
+
