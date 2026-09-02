@@ -69,5 +69,68 @@ class ScreenerExporter:
         df_summary.to_excel(excel_writer, sheet_name="Summary Overview", index=False)
 
         excel_writer.close()
-        logger.info(f"Successfully exported Screener results to {output_path}")
+
+        # Apply formatting styles using openpyxl
+        self.apply_openpyxl_styles(output_path)
+
+        logger.info(f"Successfully exported and formatted Screener results to {output_path}")
         return output_path
+
+    def apply_openpyxl_styles(self, file_path: str) -> None:
+        """Applies headers, auto column width, and conditional color highlights to Excel sheets."""
+        import openpyxl
+        from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
+        from openpyxl.utils import get_column_letter
+
+        wb = openpyxl.load_workbook(file_path)
+
+        header_fill = PatternFill(start_color="1F497D", end_color="1F497D", fill_type="solid")
+        header_font = Font(name="Calibri", size=11, bold=True, color="FFFFFF")
+        
+        green_fill = PatternFill(start_color="E2EFDA", end_color="E2EFDA", fill_type="solid")
+        red_fill = PatternFill(start_color="FCE4D6", end_color="FCE4D6", fill_type="solid")
+        
+        thin_border = Border(
+            left=Side(style='thin', color='D9D9D9'),
+            right=Side(style='thin', color='D9D9D9'),
+            top=Side(style='thin', color='D9D9D9'),
+            bottom=Side(style='thin', color='D9D9D9')
+        )
+
+        for sheet in wb.worksheets:
+            sheet.views.sheetView[0].showGridLines = True
+            
+            # Format Headers
+            for cell in sheet[1]:
+                cell.fill = header_fill
+                cell.font = header_font
+                cell.alignment = Alignment(horizontal="center", vertical="center")
+
+            # Data Rows Styling
+            for row in sheet.iter_rows(min_row=2):
+                for cell in row:
+                    cell.border = thin_border
+                    cell.font = Font(name="Calibri", size=10)
+
+                    # Conditional Highlights based on header column
+                    col_name = str(sheet.cell(row=1, column=cell.column).value).lower()
+                    val = cell.value
+
+                    if isinstance(val, (int, float)):
+                        if "roe" in col_name or "roce" in col_name or "score" in col_name:
+                            if val >= 15.0 or val >= 75.0:
+                                cell.fill = green_fill
+                        elif "debt_to_equity" in col_name:
+                            if val > 1.0:
+                                cell.fill = red_fill
+                            elif val <= 0.5:
+                                cell.fill = green_fill
+
+            # Auto Column Widths
+            for col in sheet.columns:
+                max_len = max(len(str(cell.value or '')) for cell in col)
+                col_letter = get_column_letter(col[0].column)
+                sheet.column_dimensions[col_letter].width = max(max_len + 4, 12)
+
+        wb.save(file_path)
+
