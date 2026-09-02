@@ -85,4 +85,30 @@ def get_growth_accelerator_preset() -> ScreenerConfig:
         ascending=False
     )
 
+def get_dividend_champion_preset() -> ScreenerConfig:
+    """
+    Dividend Champion Preset:
+    Identifies high dividend payout companies backed by strong cash flow and clean leverage.
+    Criteria:
+    - Dividend Payout Ratio >= 20%
+    - Free Cash Flow > 0 Cr
+    - D/E <= 1.0
+    - ROE >= 12%
+    """
+    return ScreenerConfig(
+        name="Dividend Champion",
+        description="High dividend payout ratio backed by positive free cash flow and low debt",
+        criteria=[
+            FilterCriterion("dividend_payout_ratio_pct", FilterOperator.GREATER_EQUAL, value=20.0, description="Dividend Payout >= 20%"),
+            FilterCriterion("free_cash_flow_cr", FilterOperator.GREATER_THAN, value=0.0, description="FCF > 0 Cr"),
+            FilterCriterion("debt_to_equity", FilterOperator.LESS_EQUAL, value=1.0, description="D/E <= 1.0"),
+            FilterCriterion("return_on_equity_pct", FilterOperator.GREATER_EQUAL, value=12.0, description="ROE >= 12%")
+        ],
+        handle_financials_de=True,
+        handle_zero_debt_icr=True,
+        sort_by="composite_score",
+        ascending=False
+    )
+
+
 
