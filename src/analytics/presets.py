@@ -110,5 +110,31 @@ def get_dividend_champion_preset() -> ScreenerConfig:
         ascending=False
     )
 
+def get_debt_free_bluechip_preset() -> ScreenerConfig:
+    """
+    Debt-Free Blue Chip Preset:
+    Identifies high-ROE blue chip companies operating with zero or negligible debt.
+    Criteria:
+    - D/E <= 0.1
+    - ROE >= 15%
+    - Free Cash Flow > 0 Cr
+    - Interest Coverage >= 5.0 (DEBT_FREE exempted)
+    """
+    return ScreenerConfig(
+        name="Debt-Free Blue Chip",
+        description="Zero/virtually zero debt, robust ROE, and strong free cash flow generation",
+        criteria=[
+            FilterCriterion("debt_to_equity", FilterOperator.LESS_EQUAL, value=0.1, description="D/E <= 0.1"),
+            FilterCriterion("return_on_equity_pct", FilterOperator.GREATER_EQUAL, value=15.0, description="ROE >= 15%"),
+            FilterCriterion("free_cash_flow_cr", FilterOperator.GREATER_THAN, value=0.0, description="FCF > 0 Cr"),
+            FilterCriterion("interest_coverage", FilterOperator.GREATER_EQUAL, value=5.0, description="ICR >= 5.0")
+        ],
+        handle_financials_de=True,
+        handle_zero_debt_icr=True,
+        sort_by="composite_score",
+        ascending=False
+    )
+
+
 
 
