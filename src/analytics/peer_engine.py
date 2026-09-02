@@ -110,4 +110,41 @@ class PeerEngine:
         logger.info(f"Computed standard metric percentiles across {len(res_df)} companies.")
         return res_df
 
+    def compute_inverse_debt_percentiles(self, df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
+        """
+        Computes INVERSE percentile ranks for leverage metrics (debt_to_equity, net_debt_cr).
+        For debt metrics, LOWER is BETTER, so lower numeric values get higher percentile scores (100 = lowest debt).
+        """
+        if df is None:
+            if self.percentiles_df is None:
+                df = self.compute_peer_percentiles()
+            else:
+                df = self.percentiles_df.copy()
+        else:
+            df = df.copy()
+
+        inverse_metrics = ["debt_to_equity", "net_debt_cr"]
+
+        def _inverse_group(g):
+            res = g.copy()
+            for metric in inverse_metrics:
+                if metric in res.columns and res[metric].notnull().any():
+                    col_name = f"{metric}_percentile"
+                    if len(res) == 1:
+                        res[col_name] = 100.0
+                    else:
+                        # Invert rank: rank ascending=False gives 1st rank to smallest debt
+                        res[col_name] = (res[metric].rank(pct=True, ascending=False) * 100.0).round(2)
+            return res
+
+        try:
+            res_df = df.groupby("effective_peer_group", group_keys=False, include_groups=False).apply(_inverse_group)
+        except TypeError:
+            res_df = df.groupby("effective_peer_group", group_keys=False).apply(_inverse_group)
+
+        self.percentiles_df = res_df
+        logger.info("Computed inverse leverage metric percentiles.")
+        return res_df
+
+
 
