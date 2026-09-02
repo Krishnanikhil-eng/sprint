@@ -208,5 +208,41 @@ class ScreenerEngine:
         self.set_config(config)
         return self.apply_filters(df)
 
+    def compute_raw_composite_score(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Computes a raw weighted composite score based on 4 pillars:
+        - Quality/Profitability (35%)
+        - Growth (25%)
+        - Financial Health/Cash Flow (25%)
+        - Capital Efficiency/Turnover (15%)
+        """
+        df = df.copy()
+
+        # Fill missing values for scoring safely
+        roe = df["return_on_equity_pct"].fillna(0.0).clip(lower=-50, upper=100)
+        roce = df["roce_pct"].fillna(0.0).clip(lower=-50, upper=100)
+        npm = df["net_profit_margin_pct"].fillna(0.0).clip(lower=-50, upper=100)
+        
+        rev_cagr = df["revenue_cagr_5yr"].fillna(0.0).clip(lower=-30, upper=100)
+        pat_cagr = df["pat_cagr_5yr"].fillna(0.0).clip(lower=-30, upper=100)
+        
+        fcf = df["free_cash_flow_cr"].fillna(0.0)
+        fcf_score = (fcf > 0).astype(float) * 10.0 + (fcf / 100.0).clip(lower=-10, upper=40)
+        de = df["debt_to_equity"].fillna(0.0).clip(lower=0, upper=10)
+        de_health = (10.0 - de).clip(lower=0, upper=10) # lower D/E is healthier
+        
+        asset_turnover = df["asset_turnover"].fillna(0.0).clip(lower=0, upper=5)
+
+        # Pillar Scores
+        quality_pillar = (roe * 0.4) + (roce * 0.4) + (npm * 0.2)
+        growth_pillar = (rev_cagr * 0.5) + (pat_cagr * 0.5)
+        health_pillar = (de_health * 5.0) + (fcf_score * 0.5)
+        efficiency_pillar = asset_turnover * 20.0
+
+        raw_score = (quality_pillar * 0.35) + (growth_pillar * 0.25) + (health_pillar * 0.25) + (efficiency_pillar * 0.15)
+        df["raw_composite_score"] = raw_score.round(2)
+        return df
+
+
 
 
