@@ -293,8 +293,12 @@ class ScreenerEngine:
             return g
 
         if "broad_sector" in df.columns and df["broad_sector"].notnull().any():
-            df = df.groupby("broad_sector", group_keys=False).apply(_score_sector)
+            try:
+                df = df.groupby("broad_sector", group_keys=False, include_groups=False).apply(_score_sector)
+            except TypeError:
+                df = df.groupby("broad_sector", group_keys=False).apply(_score_sector)
         else:
+
             df["sector_relative_score"] = df["composite_score"]
             df["sector_rank"] = df["composite_score"].rank(ascending=False, method="min").astype(int)
 
