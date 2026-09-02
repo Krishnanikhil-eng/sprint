@@ -93,3 +93,34 @@ class ScreenerEngine:
             return df
         finally:
             conn.close()
+
+    def _matches_criterion(self, row: pd.Series, criterion: FilterCriterion) -> bool:
+        """Evaluates whether a row matches a specific filter criterion."""
+        val = row.get(criterion.metric_name)
+        return criterion.evaluate(val)
+
+    def apply_filters(self, df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
+        """
+        Applies configured criteria filters against loaded company data.
+        """
+        if df is None:
+            if self.raw_data is None:
+                self.load_latest_company_ratios()
+            df = self.raw_data.copy()
+        else:
+            df = df.copy()
+
+        if not self.config or not self.config.criteria:
+            self.filtered_data = df
+            return df
+
+        mask = pd.Series(True, index=df.index)
+        for criterion in self.config.criteria:
+            crit_mask = df.apply(lambda row: self._matches_criterion(row, criterion), axis=1)
+            mask = mask & crit_mask
+
+        filtered = df[mask].copy()
+        self.filtered_data = filtered
+        logger.info(f"Applied {len(self.config.criteria)} criteria: {len(filtered)} / {len(df)} companies passed.")
+        return filtered
+
