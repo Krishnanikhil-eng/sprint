@@ -95,9 +95,18 @@ class ScreenerEngine:
             conn.close()
 
     def _matches_criterion(self, row: pd.Series, criterion: FilterCriterion) -> bool:
-        """Evaluates whether a row matches a specific filter criterion."""
+        """Evaluates whether a row matches a specific filter criterion with sector awareness."""
+        # Financials sector D/E exemption handling
+        if criterion.metric_name == "debt_to_equity" and self.config and self.config.handle_financials_de:
+            sector = str(row.get("broad_sector", "")).upper()
+            sub_sector = str(row.get("sub_sector", "")).upper()
+            if "FINANCIAL" in sector or "BANK" in sector or "FINANCIAL" in sub_sector or "BANK" in sub_sector:
+                # Exclude Financials from strict D/E threshold check unless specified otherwise
+                return True
+
         val = row.get(criterion.metric_name)
         return criterion.evaluate(val)
+
 
     def apply_filters(self, df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
         """
