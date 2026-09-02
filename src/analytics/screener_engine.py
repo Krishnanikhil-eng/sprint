@@ -20,6 +20,19 @@ class ScreenerEngine:
         self.db_path = db_path
         self.raw_data: Optional[pd.DataFrame] = None
         self.filtered_data: Optional[pd.DataFrame] = None
+        self.config: Optional[ScreenerConfig] = None
+
+    def set_config(self, config: ScreenerConfig) -> None:
+        """Sets the active screening configuration."""
+        self.config = config
+        logger.info(f"Loaded active config: '{config.name}' with {len(config.criteria)} criteria.")
+
+    def load_config_from_json(self, json_path: str) -> ScreenerConfig:
+        """Loads and sets configuration from a JSON file path."""
+        config = ScreenerConfig.from_json(json_path)
+        self.set_config(config)
+        return config
+
 
     def get_connection(self) -> sqlite3.Connection:
         return sqlite3.connect(self.db_path)

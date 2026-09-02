@@ -86,3 +86,36 @@ class ScreenerConfig:
             "limit": self.limit,
             "criteria_count": len(self.criteria)
         }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'ScreenerConfig':
+        criteria = []
+        for c in data.get("criteria", []):
+            op = FilterOperator(c["operator"]) if isinstance(c["operator"], str) else c["operator"]
+            criteria.append(FilterCriterion(
+                metric_name=c["metric_name"],
+                operator=op,
+                value=c.get("value"),
+                min_value=c.get("min_value"),
+                max_value=c.get("max_value"),
+                weight=c.get("weight", 1.0),
+                description=c.get("description", "")
+            ))
+        return cls(
+            name=data.get("name", "Custom Screener"),
+            description=data.get("description", ""),
+            criteria=criteria,
+            handle_financials_de=data.get("handle_financials_de", True),
+            handle_zero_debt_icr=data.get("handle_zero_debt_icr", True),
+            sort_by=data.get("sort_by", "composite_score"),
+            ascending=data.get("ascending", False),
+            limit=data.get("limit")
+        )
+
+    @classmethod
+    def from_json(cls, json_path: str) -> 'ScreenerConfig':
+        import json
+        with open(json_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        return cls.from_dict(data)
+
