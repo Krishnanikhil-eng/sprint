@@ -135,6 +135,41 @@ def get_debt_free_bluechip_preset() -> ScreenerConfig:
         ascending=False
     )
 
+def get_turnaround_watch_preset() -> ScreenerConfig:
+    """
+    Turnaround Watch Preset:
+    Identifies recovering companies displaying improving earnings CAGR, positive FCF conversion, and manageable net debt.
+    Criteria:
+    - PAT 5Yr CAGR >= 5%
+    - Free Cash Flow > 0 Cr
+    - Net Debt <= 5000 Cr
+    - OPM >= 8%
+    """
+    return ScreenerConfig(
+        name="Turnaround Watch",
+        description="Operational recovery candidates with positive cash flows and debt deleveraging",
+        criteria=[
+            FilterCriterion("pat_cagr_5yr", FilterOperator.GREATER_EQUAL, value=5.0, description="PAT CAGR 5Yr >= 5%"),
+            FilterCriterion("free_cash_flow_cr", FilterOperator.GREATER_THAN, value=0.0, description="FCF > 0 Cr"),
+            FilterCriterion("net_debt_cr", FilterOperator.LESS_EQUAL, value=5000.0, description="Net Debt <= 5000 Cr"),
+            FilterCriterion("operating_profit_margin_pct", FilterOperator.GREATER_EQUAL, value=8.0, description="OPM >= 8%")
+        ],
+        handle_financials_de=True,
+        handle_zero_debt_icr=True,
+        sort_by="composite_score",
+        ascending=False
+    )
+
+ALL_PRESETS: Dict[str, ScreenerConfig] = {
+    "quality_compounder": get_quality_compounder_preset(),
+    "value_pick": get_value_pick_preset(),
+    "growth_accelerator": get_growth_accelerator_preset(),
+    "dividend_champion": get_dividend_champion_preset(),
+    "debt_free_bluechip": get_debt_free_bluechip_preset(),
+    "turnaround_watch": get_turnaround_watch_preset()
+}
+
+
 
 
 
