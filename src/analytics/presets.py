@@ -32,3 +32,31 @@ def get_quality_compounder_preset() -> ScreenerConfig:
         sort_by="composite_score",
         ascending=False
     )
+
+def get_value_pick_preset() -> ScreenerConfig:
+    """
+    Value Pick Preset:
+    Identifies attractively priced businesses with solid margin profiles and modest leverage.
+    Criteria:
+    - D/E <= 1.0
+    - ROE >= 12%
+    - Net Profit Margin >= 8%
+    - FCF > 0 Cr
+    - Book Value per Share > 0
+    """
+    return ScreenerConfig(
+        name="Value Pick",
+        description="Low leverage, healthy profit margin, and positive free cash flow value candidates",
+        criteria=[
+            FilterCriterion("debt_to_equity", FilterOperator.LESS_EQUAL, value=1.0, description="D/E <= 1.0"),
+            FilterCriterion("return_on_equity_pct", FilterOperator.GREATER_EQUAL, value=12.0, description="ROE >= 12%"),
+            FilterCriterion("net_profit_margin_pct", FilterOperator.GREATER_EQUAL, value=8.0, description="NPM >= 8%"),
+            FilterCriterion("free_cash_flow_cr", FilterOperator.GREATER_THAN, value=0.0, description="FCF > 0 Cr"),
+            FilterCriterion("book_value_per_share", FilterOperator.GREATER_THAN, value=0.0, description="Book Value > 0")
+        ],
+        handle_financials_de=True,
+        handle_zero_debt_icr=True,
+        sort_by="composite_score",
+        ascending=False
+    )
+
