@@ -4,6 +4,7 @@ Peer Comparison Screen
 
 import streamlit as st
 import pandas as pd
+import plotly.graph_objects as go
 
 from src.dashboard.utils.db import get_companies, get_sectors, get_peers
 from src.dashboard.config import LABEL_NA
@@ -112,3 +113,75 @@ def prepare_peer_data(peer_df, selected_company_name):
     return benchmark_data, peer_avg_values, benchmark_values
 
 benchmark_data, peer_avg_values, benchmark_values = prepare_peer_data(peer_data, selected_company)
+
+# Radar chart comparison
+if benchmark_data is not None and peer_avg_values is not None:
+    st.subheader("Radar Chart Comparison")
+    
+    metric_labels = [
+        'ROE', 'ROCE', 'D/E', 'NPM', 
+        'OPM', 'Asset Turnover', 'FCF', 'Rev CAGR'
+    ]
+    
+    # Normalize values for radar chart (0-100 scale)
+    def normalize_for_radar(value, metric_name):
+        """Normalize metric values for radar chart display."""
+        if metric_name in ['D/E']:
+            # Lower is better for D/E, invert
+            return max(0, 100 - min(value * 20, 100))
+        else:
+            # Higher is better
+            return max(0, min(value, 100))
+    
+    benchmark_radar = [
+        normalize_for_radar(benchmark_values.get('return_on_equity_pct', 0), 'ROE'),
+        normalize_for_radar(benchmark_values.get('roce_pct', 0), 'ROCE'),
+        normalize_for_radar(benchmark_values.get('debt_to_equity', 0), 'D/E'),
+        normalize_for_radar(benchmark_values.get('net_profit_margin_pct', 0), 'NPM'),
+        normalize_for_radar(benchmark_values.get('operating_profit_margin_pct', 0), 'OPM'),
+        normalize_for_radar(benchmark_values.get('asset_turnover', 0), 'Asset Turnover'),
+        normalize_for_radar(benchmark_values.get('free_cash_flow_cr', 0) / 100, 'FCF'),
+        normalize_for_radar(benchmark_values.get('revenue_cagr_5yr', 0), 'Rev CAGR')
+    ]
+    
+    peer_avg_radar = [
+        normalize_for_radar(peer_avg_values.get('return_on_equity_pct', 0), 'ROE'),
+        normalize_for_radar(peer_avg_values.get('roce_pct', 0), 'ROCE'),
+        normalize_for_radar(peer_avg_values.get('debt_to_equity', 0), 'D/E'),
+        normalize_for_radar(peer_avg_values.get('net_profit_margin_pct', 0), 'NPM'),
+        normalize_for_radar(peer_avg_values.get('operating_profit_margin_pct', 0), 'OPM'),
+        normalize_for_radar(peer_avg_values.get('asset_turnover', 0), 'Asset Turnover'),
+        normalize_for_radar(peer_avg_values.get('free_cash_flow_cr', 0) / 100, 'FCF'),
+        normalize_for_radar(peer_avg_values.get('revenue_cagr_5yr', 0), 'Rev CAGR')
+    ]
+    
+    fig = go.Figure()
+    
+    fig.add_trace(go.Scatterpolar(
+        r=benchmark_radar,
+        theta=metric_labels,
+        fill='toself',
+        name=f"{benchmark_data['company_name']}",
+        line_color='blue'
+    ))
+    
+    fig.add_trace(go.Scatterpolar(
+        r=peer_avg_radar,
+        theta=metric_labels,
+        fill='toself',
+        name='Peer Group Average',
+        line_color='orange'
+    ))
+    
+    fig.update_layout(
+        polar=dict(
+            radialaxis=dict(
+                visible=True,
+                range=[0, 100]
+            )),
+        showlegend=True,
+        height=500,
+        margin=dict(l=20, r=20, t=40, b=20)
+    )
+    
+    st.plotly_chart(fig, use_container_width=True)
