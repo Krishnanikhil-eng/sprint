@@ -79,6 +79,18 @@ def compute_fcf_yield(market_cap_df: pd.DataFrame, ratios_df: pd.DataFrame) -> p
     if market_cap_df.empty or ratios_df.empty:
         return pd.DataFrame()
     
+    # Validate inputs
+    missing_market_cap = market_cap_df['market_cap_crore'].isna().sum()
+    zero_market_cap = (market_cap_df['market_cap_crore'] == 0).sum()
+    missing_fcf = ratios_df['free_cash_flow_cr'].isna().sum()
+    
+    if missing_market_cap > 0:
+        print(f"Warning: {missing_market_cap} companies missing market cap")
+    if zero_market_cap > 0:
+        print(f"Warning: {zero_market_cap} companies with zero market cap")
+    if missing_fcf > 0:
+        print(f"Warning: {missing_fcf} companies missing FCF")
+    
     # Merge market cap with ratios
     merged = pd.merge(
         market_cap_df,
@@ -86,6 +98,12 @@ def compute_fcf_yield(market_cap_df: pd.DataFrame, ratios_df: pd.DataFrame) -> p
         on='company_id',
         how='inner'
     )
+    
+    # Check for duplicates
+    duplicates = merged['company_id'].duplicated().sum()
+    if duplicates > 0:
+        print(f"Warning: {duplicates} duplicate company IDs found")
+        merged = merged.drop_duplicates(subset=['company_id'])
     
     # Compute FCF yield
     merged['FCF_yield_pct'] = None
