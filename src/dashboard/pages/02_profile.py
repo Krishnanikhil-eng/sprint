@@ -4,8 +4,10 @@ Company Profile Screen
 
 import streamlit as st
 import pandas as pd
+import plotly.graph_objects as go
+import plotly.express as px
 
-from src.dashboard.utils.db import get_companies, get_ratios
+from src.dashboard.utils.db import get_companies, get_ratios, get_pl
 from src.dashboard.config import LABEL_NA
 
 st.header("Company Profile")
@@ -142,3 +144,79 @@ if not ratios_data.empty:
         st.metric("FCF (Latest)", format_kpi(fcf, "currency"))
 else:
     st.warning("No financial ratios available for this company")
+
+# Charts
+st.markdown("---")
+st.subheader("Financial Performance Charts")
+
+# Load P&L data for charts
+try:
+    pl_data = get_pl(ticker)
+except Exception as e:
+    st.error(f"Error loading P&L data: {e}")
+    pl_data = pd.DataFrame()
+
+if not pl_data.empty:
+    # Revenue and Net Profit bar chart
+    chart_col1, chart_col2 = st.columns(2)
+    
+    with chart_col1:
+        st.markdown("**Revenue & Net Profit (10 Years)**")
+        pl_sorted = pl_data.sort_values('year').tail(10)
+        
+        fig1 = go.Figure()
+        fig1.add_trace(go.Bar(
+            x=pl_sorted['year'],
+            y=pl_sorted['sales'],
+            name='Revenue',
+            marker_color='blue'
+        ))
+        fig1.add_trace(go.Bar(
+            x=pl_sorted['year'],
+            y=pl_sorted['net_profit'],
+            name='Net Profit',
+            marker_color='green'
+        ))
+        fig1.update_layout(
+            barmode='group',
+            height=400,
+            xaxis_title='Year',
+            yaxis_title='Amount (Cr)',
+            margin=dict(l=20, r=20, t=40, b=20)
+        )
+        st.plotly_chart(fig1, use_container_width=True)
+    
+    with chart_col2:
+        st.markdown("**ROE & ROCE Trend**")
+        ratios_sorted = ratios_data.sort_values('year').tail(10)
+        
+        fig2 = go.Figure()
+        fig2.add_trace(go.Scatter(
+            x=ratios_sorted['year'],
+            y=ratios_sorted['return_on_equity_pct'],
+            mode='lines+markers',
+            name='ROE',
+            line=dict(color='blue')
+        ))
+        fig2.add_trace(go.Scatter(
+            x=ratios_sorted['year'],
+            y=ratios_sorted['roce_pct'],
+            mode='lines+markers',
+            name='ROCE',
+            line=dict(color='orange'),
+            yaxis='y2'
+        ))
+        fig2.update_layout(
+            height=400,
+            xaxis_title='Year',
+            yaxis_title='ROE (%)',
+            yaxis2=dict(
+                title='ROCE (%)',
+                overlaying='y',
+                side='right'
+            ),
+            margin=dict(l=20, r=20, t=40, b=20)
+        )
+        st.plotly_chart(fig2, use_container_width=True)
+else:
+    st.warning("No P&L data available for charts")
