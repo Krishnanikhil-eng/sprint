@@ -156,6 +156,8 @@ def compute_valuation_flags(valuation_df: pd.DataFrame, sector_medians: Dict[str
     valuation_df['flag'] = 'Fair'
     valuation_df['PE_vs_sector_median_pct'] = None
     
+    missing_benchmark_count = 0
+    
     for idx, row in valuation_df.iterrows():
         pe = row.get('pe_ratio')
         sector = row.get('broad_sector')
@@ -170,6 +172,14 @@ def compute_valuation_flags(valuation_df: pd.DataFrame, sector_medians: Dict[str
                     valuation_df.at[idx, 'flag'] = 'Caution'
                 elif pe < sector_median * 0.7:
                     valuation_df.at[idx, 'flag'] = 'Discount'
+            else:
+                missing_benchmark_count += 1
+        else:
+            if pd.notna(pe):
+                missing_benchmark_count += 1
+    
+    if missing_benchmark_count > 0:
+        print(f"Warning: {missing_benchmark_count} companies could not be flagged due to missing sector benchmark or P/E")
     
     return valuation_df
 
