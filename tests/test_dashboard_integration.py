@@ -73,6 +73,35 @@ class TestDashboardIntegration:
                 assert "import streamlit" in content, f"Page {page} missing streamlit import"
             except Exception as e:
                 pytest.fail(f"Failed to read page {page}: {e}")
+    
+    def test_screener_page_has_filters(self):
+        """Test that screener page has filter inputs."""
+        screener_path = Path("src/dashboard/pages/03_screener.py")
+        with open(screener_path, 'r') as f:
+            content = f.read()
+        
+        # Check for filter inputs
+        assert "number_input" in content, "Screener missing number_input filters"
+        assert "ROE" in content or "roe" in content, "Screener missing ROE filter"
+        assert "D/E" in content or "debt_to_equity" in content, "Screener missing D/E filter"
+    
+    def test_screener_page_has_csv_export(self):
+        """Test that screener page has CSV export functionality."""
+        screener_path = Path("src/dashboard/pages/03_screener.py")
+        with open(screener_path, 'r') as f:
+            content = f.read()
+        
+        assert "download_button" in content, "Screener missing download_button for CSV export"
+        assert "to_csv" in content, "Screener missing to_csv for export"
+    
+    def test_screener_page_has_presets(self):
+        """Test that screener page has preset strategies."""
+        screener_path = Path("src/dashboard/pages/03_screener.py")
+        with open(screener_path, 'r') as f:
+            content = f.read()
+        
+        assert "PRESET_STRATEGIES" in content or "preset" in content.lower(), "Screener missing preset strategies"
+        assert "selectbox" in content, "Screener missing selectbox for presets"
 
 
 if __name__ == "__main__":
