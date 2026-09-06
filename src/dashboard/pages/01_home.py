@@ -7,21 +7,35 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 
-from src.dashboard.utils.db import get_latest_ratios_all, get_sectors
-from src.dashboard.config import LABEL_NA
+from src.dashboard.utils.db import get_latest_ratios_all, get_sectors, get_ratios
+from src.dashboard.config import LABEL_NA, SUPPORTED_YEARS, DEFAULT_YEAR
 
 st.header("Home Dashboard")
+
+# Year selector
+selected_year = st.selectbox(
+    "Select Year",
+    options=SUPPORTED_YEARS,
+    index=len(SUPPORTED_YEARS) - 1,
+    help="Filter metrics by fiscal year"
+)
 
 # Load data
 try:
     ratios_df = get_latest_ratios_all()
     sectors_df = get_sectors()
+    
+    # Filter by selected year if data available
+    if 'year' in ratios_df.columns:
+        year_filtered_df = ratios_df[ratios_df['year'] == selected_year]
+        if not year_filtered_df.empty:
+            ratios_df = year_filtered_df
 except Exception as e:
     st.error(f"Error loading data: {e}")
     st.stop()
 
 if ratios_df.empty:
-    st.warning("No data available. Please ensure the database is populated.")
+    st.warning(f"No data available for year {selected_year}. Please ensure the database is populated.")
     st.stop()
 
 # Calculate KPIs
