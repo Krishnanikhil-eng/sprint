@@ -7,7 +7,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
 
-from src.dashboard.utils.db import get_companies, get_ratios, get_pl
+from src.dashboard.utils.db import get_companies, get_ratios, get_pl, get_pros_cons
 from src.dashboard.config import LABEL_NA
 
 st.header("Company Profile")
@@ -220,3 +220,39 @@ if not pl_data.empty:
         st.plotly_chart(fig2, use_container_width=True)
 else:
     st.warning("No P&L data available for charts")
+
+# Pros and Cons
+st.markdown("---")
+st.subheader("Pros and Cons")
+
+try:
+    pros_cons_data = get_pros_cons(ticker)
+except Exception as e:
+    st.error(f"Error loading pros and cons: {e}")
+    pros_cons_data = pd.DataFrame()
+
+if not pros_cons_data.empty:
+    pc_row = pros_cons_data.iloc[0]
+    pros_col, cons_col = st.columns(2)
+    
+    with pros_col:
+        st.markdown("### ✅ Pros")
+        pros_text = pc_row.get('pros', '')
+        if pd.notna(pros_text) and pros_text:
+            pros_list = [p.strip() for p in str(pros_text).split('\n') if p.strip()]
+            for pro in pros_list:
+                st.markdown(f"✅ {pro}")
+        else:
+            st.info("No pros data available")
+    
+    with cons_col:
+        st.markdown("### ❌ Cons")
+        cons_text = pc_row.get('cons', '')
+        if pd.notna(cons_text) and cons_text:
+            cons_list = [c.strip() for c in str(cons_text).split('\n') if c.strip()]
+            for con in cons_list:
+                st.markdown(f"❌ {con}")
+        else:
+            st.info("No cons data available")
+else:
+    st.info("No pros and cons data available for this company")
