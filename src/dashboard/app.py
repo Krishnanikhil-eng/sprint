@@ -4,6 +4,7 @@ Main Streamlit application entry point
 """
 
 import streamlit as st
+from pathlib import Path
 
 st.set_page_config(
     page_title="Nifty 100 Analytics",
@@ -29,6 +30,11 @@ st.sidebar.title("Navigation")
 selection = st.sidebar.radio("Go to", list(PAGES.keys()))
 
 if selection:
-    page_path = PAGES[selection]
-    with open(page_path, "r", encoding="utf-8") as f:
-        exec(f.read())
+    page_path = Path(__file__).parent / PAGES[selection]
+    try:
+        with open(page_path, "r", encoding="utf-8") as f:
+            exec(f.read())
+    except FileNotFoundError:
+        st.error(f"Page not found: {page_path}")
+    except Exception as e:
+        st.error(f"Error loading page: {e}")
