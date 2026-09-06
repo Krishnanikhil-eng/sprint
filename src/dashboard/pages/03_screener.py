@@ -201,3 +201,60 @@ if 'interest_coverage' in filtered_df.columns:
 
 # Display results count
 st.info(f"{len(filtered_df)} companies match your filters")
+
+# Results table
+if not filtered_df.empty:
+    display_cols = [
+        'company_id',
+        'company_name',
+        'broad_sector',
+        'composite_quality_score',
+        'return_on_equity_pct',
+        'debt_to_equity',
+        'free_cash_flow_cr',
+        'revenue_cagr_5yr',
+        'pat_cagr_5yr',
+        'operating_profit_margin_pct',
+        'interest_coverage'
+    ]
+    
+    available_cols = [col for col in display_cols if col in filtered_df.columns]
+    results_df = filtered_df[available_cols].copy()
+    
+    # Format columns for display
+    if 'composite_quality_score' in results_df.columns:
+        results_df['composite_quality_score'] = results_df['composite_quality_score'].round(2)
+    if 'return_on_equity_pct' in results_df.columns:
+        results_df['return_on_equity_pct'] = results_df['return_on_equity_pct'].round(2)
+    if 'debt_to_equity' in results_df.columns:
+        results_df['debt_to_equity'] = results_df['debt_to_equity'].round(2)
+    if 'free_cash_flow_cr' in results_df.columns:
+        results_df['free_cash_flow_cr'] = results_df['free_cash_flow_cr'].round(2)
+    if 'revenue_cagr_5yr' in results_df.columns:
+        results_df['revenue_cagr_5yr'] = results_df['revenue_cagr_5yr'].round(2)
+    if 'pat_cagr_5yr' in results_df.columns:
+        results_df['pat_cagr_5yr'] = results_df['pat_cagr_5yr'].round(2)
+    if 'operating_profit_margin_pct' in results_df.columns:
+        results_df['operating_profit_margin_pct'] = results_df['operating_profit_margin_pct'].round(2)
+    if 'interest_coverage' in results_df.columns:
+        results_df['interest_coverage'] = results_df['interest_coverage'].round(2)
+    
+    # Rename columns for display
+    column_rename = {
+        'company_id': 'ID',
+        'company_name': 'Company',
+        'broad_sector': 'Sector',
+        'composite_quality_score': 'Quality Score',
+        'return_on_equity_pct': 'ROE (%)',
+        'debt_to_equity': 'D/E',
+        'free_cash_flow_cr': 'FCF (Cr)',
+        'revenue_cagr_5yr': 'Rev CAGR 5Y (%)',
+        'pat_cagr_5yr': 'PAT CAGR 5Y (%)',
+        'operating_profit_margin_pct': 'OPM (%)',
+        'interest_coverage': 'ICR'
+    }
+    results_df = results_df.rename(columns=column_rename)
+    
+    st.dataframe(results_df, use_container_width=True, height=400)
+else:
+    st.warning("No companies match your current filters. Try adjusting the criteria.")
