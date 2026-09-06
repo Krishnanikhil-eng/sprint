@@ -5,7 +5,7 @@ Company Profile Screen
 import streamlit as st
 import pandas as pd
 
-from src.dashboard.utils.db import get_companies
+from src.dashboard.utils.db import get_companies, get_ratios
 from src.dashboard.config import LABEL_NA
 
 st.header("Company Profile")
@@ -89,3 +89,56 @@ about = company_data.get('about_company', LABEL_NA)
 if pd.isna(about) or about is None:
     about = LABEL_NA
 st.markdown(f"**About:** {about}")
+
+# Load financial ratios
+try:
+    ratios_data = get_ratios(ticker)
+except Exception as e:
+    st.error(f"Error loading financial ratios: {e}")
+    ratios_data = pd.DataFrame()
+
+# KPI Tiles
+st.markdown("---")
+st.subheader("Key Performance Indicators")
+
+if not ratios_data.empty:
+    latest_ratios = ratios_data.iloc[0]
+    
+    kpi1, kpi2, kpi3 = st.columns(3)
+    kpi4, kpi5, kpi6 = st.columns(3)
+    
+    def format_kpi(value, metric_type="percentage"):
+        if pd.isna(value) or value is None:
+            return LABEL_NA
+        if metric_type == "percentage":
+            return f"{value:.2f}%"
+        elif metric_type == "currency":
+            return f"₹{value:.2f} Cr"
+        else:
+            return f"{value:.2f}"
+    
+    with kpi1:
+        roe = latest_ratios.get('return_on_equity_pct')
+        st.metric("ROE", format_kpi(roe, "percentage"))
+    
+    with kpi2:
+        roce = latest_ratios.get('roce_pct')
+        st.metric("ROCE", format_kpi(roce, "percentage"))
+    
+    with kpi3:
+        npm = latest_ratios.get('net_profit_margin_pct')
+        st.metric("Net Profit Margin", format_kpi(npm, "percentage"))
+    
+    with kpi4:
+        de = latest_ratios.get('debt_to_equity')
+        st.metric("D/E", format_kpi(de, "ratio"))
+    
+    with kpi5:
+        rev_cagr = latest_ratios.get('revenue_cagr_5yr')
+        st.metric("Revenue CAGR (5yr)", format_kpi(rev_cagr, "percentage"))
+    
+    with kpi6:
+        fcf = latest_ratios.get('free_cash_flow_cr')
+        st.metric("FCF (Latest)", format_kpi(fcf, "currency"))
+else:
+    st.warning("No financial ratios available for this company")
