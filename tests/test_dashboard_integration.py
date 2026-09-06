@@ -102,6 +102,38 @@ class TestDashboardIntegration:
         
         assert "PRESET_STRATEGIES" in content or "preset" in content.lower(), "Screener missing preset strategies"
         assert "selectbox" in content, "Screener missing selectbox for presets"
+    
+    def test_valuation_engine_exists(self):
+        """Test that valuation engine module exists."""
+        valuation_path = Path("src/analytics/valuation.py")
+        assert valuation_path.exists(), "Valuation engine valuation.py does not exist"
+    
+    def test_valuation_engine_has_functions(self):
+        """Test that valuation engine has required functions."""
+        valuation_path = Path("src/analytics/valuation.py")
+        with open(valuation_path, 'r') as f:
+            content = f.read()
+        
+        required_functions = [
+            "run_valuation_engine",
+            "compute_fcf_yield",
+            "calculate_sector_median_pe",
+            "compute_valuation_flags",
+            "export_valuation_summary",
+            "export_valuation_flags"
+        ]
+        
+        for func in required_functions:
+            assert func in content, f"Valuation engine missing function: {func}"
+    
+    def test_valuation_engine_has_fcf_calculation(self):
+        """Test that valuation engine has FCF yield calculation."""
+        valuation_path = Path("src/analytics/valuation.py")
+        with open(valuation_path, 'r') as f:
+            content = f.read()
+        
+        assert "FCF_yield_pct" in content, "Valuation engine missing FCF yield calculation"
+        assert "market_cap_crore" in content, "Valuation engine missing market cap reference"
 
 
 if __name__ == "__main__":
