@@ -161,63 +161,77 @@ if not pl_data.empty:
     chart_col1, chart_col2 = st.columns(2)
     
     with chart_col1:
-        st.markdown("**Revenue & Net Profit (10 Years)**")
+        st.markdown("**Revenue & Net Profit (Available Years)**")
         pl_sorted = pl_data.sort_values('year').tail(10)
         
-        fig1 = go.Figure()
-        fig1.add_trace(go.Bar(
-            x=pl_sorted['year'],
-            y=pl_sorted['sales'],
-            name='Revenue',
-            marker_color='blue'
-        ))
-        fig1.add_trace(go.Bar(
-            x=pl_sorted['year'],
-            y=pl_sorted['net_profit'],
-            name='Net Profit',
-            marker_color='green'
-        ))
-        fig1.update_layout(
-            barmode='group',
-            height=400,
-            xaxis_title='Year',
-            yaxis_title='Amount (Cr)',
-            margin=dict(l=20, r=20, t=40, b=20)
-        )
-        st.plotly_chart(fig1, use_container_width=True)
+        # Handle missing values
+        pl_sorted['sales'] = pl_sorted['sales'].fillna(0)
+        pl_sorted['net_profit'] = pl_sorted['net_profit'].fillna(0)
+        
+        if len(pl_sorted) > 0:
+            fig1 = go.Figure()
+            fig1.add_trace(go.Bar(
+                x=pl_sorted['year'],
+                y=pl_sorted['sales'],
+                name='Revenue',
+                marker_color='blue'
+            ))
+            fig1.add_trace(go.Bar(
+                x=pl_sorted['year'],
+                y=pl_sorted['net_profit'],
+                name='Net Profit',
+                marker_color='green'
+            ))
+            fig1.update_layout(
+                barmode='group',
+                height=400,
+                xaxis_title='Year',
+                yaxis_title='Amount (Cr)',
+                margin=dict(l=20, r=20, t=40, b=20)
+            )
+            st.plotly_chart(fig1, use_container_width=True)
+        else:
+            st.warning("No P&L data available for chart")
     
     with chart_col2:
-        st.markdown("**ROE & ROCE Trend**")
+        st.markdown("**ROE & ROCE Trend (Available Years)**")
         ratios_sorted = ratios_data.sort_values('year').tail(10)
         
-        fig2 = go.Figure()
-        fig2.add_trace(go.Scatter(
-            x=ratios_sorted['year'],
-            y=ratios_sorted['return_on_equity_pct'],
-            mode='lines+markers',
-            name='ROE',
-            line=dict(color='blue')
-        ))
-        fig2.add_trace(go.Scatter(
-            x=ratios_sorted['year'],
-            y=ratios_sorted['roce_pct'],
-            mode='lines+markers',
-            name='ROCE',
-            line=dict(color='orange'),
-            yaxis='y2'
-        ))
-        fig2.update_layout(
-            height=400,
-            xaxis_title='Year',
-            yaxis_title='ROE (%)',
-            yaxis2=dict(
-                title='ROCE (%)',
-                overlaying='y',
-                side='right'
-            ),
-            margin=dict(l=20, r=20, t=40, b=20)
-        )
-        st.plotly_chart(fig2, use_container_width=True)
+        # Handle missing values
+        ratios_sorted['return_on_equity_pct'] = ratios_sorted['return_on_equity_pct'].fillna(0)
+        ratios_sorted['roce_pct'] = ratios_sorted['roce_pct'].fillna(0)
+        
+        if len(ratios_sorted) > 0:
+            fig2 = go.Figure()
+            fig2.add_trace(go.Scatter(
+                x=ratios_sorted['year'],
+                y=ratios_sorted['return_on_equity_pct'],
+                mode='lines+markers',
+                name='ROE',
+                line=dict(color='blue')
+            ))
+            fig2.add_trace(go.Scatter(
+                x=ratios_sorted['year'],
+                y=ratios_sorted['roce_pct'],
+                mode='lines+markers',
+                name='ROCE',
+                line=dict(color='orange'),
+                yaxis='y2'
+            ))
+            fig2.update_layout(
+                height=400,
+                xaxis_title='Year',
+                yaxis_title='ROE (%)',
+                yaxis2=dict(
+                    title='ROCE (%)',
+                    overlaying='y',
+                    side='right'
+                ),
+                margin=dict(l=20, r=20, t=40, b=20)
+            )
+            st.plotly_chart(fig2, use_container_width=True)
+        else:
+            st.warning("No ratio data available for chart")
 else:
     st.warning("No P&L data available for charts")
 
