@@ -256,5 +256,15 @@ if not filtered_df.empty:
     results_df = results_df.rename(columns=column_rename)
     
     st.dataframe(results_df, use_container_width=True, height=400)
+    
+    # CSV Export
+    csv = results_df.to_csv(index=False)
+    st.download_button(
+        label="Download Results as CSV",
+        data=csv,
+        file_name="screener_results.csv",
+        mime="text/csv",
+        help="Download filtered results as CSV file"
+    )
 else:
     st.warning("No companies match your current filters. Try adjusting the criteria.")
