@@ -182,7 +182,7 @@ def get_valuation(ticker: str) -> pd.DataFrame:
 
 @st.cache_data(ttl=600)
 def get_latest_ratios_all() -> pd.DataFrame:
-    """Get latest financial ratios for all companies."""
+    """Get latest financial ratios for all companies with optimized query."""
     conn = get_connection()
     try:
         query = """
@@ -196,7 +196,19 @@ def get_latest_ratios_all() -> pd.DataFrame:
             c.company_name,
             s.broad_sector,
             s.sub_sector,
-            lr.*
+            lr.year,
+            lr.return_on_equity_pct,
+            lr.roce_pct,
+            lr.debt_to_equity,
+            lr.net_profit_margin_pct,
+            lr.operating_profit_margin_pct,
+            lr.asset_turnover,
+            lr.free_cash_flow_cr,
+            lr.revenue_cagr_5yr,
+            lr.pat_cagr_5yr,
+            lr.interest_coverage,
+            lr.composite_quality_score,
+            lr.capital_allocation_pattern
         FROM LatestRatios lr
         JOIN companies c ON lr.company_id = c.company_id
         LEFT JOIN sectors s ON lr.company_id = s.company_id
