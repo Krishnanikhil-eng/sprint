@@ -114,6 +114,30 @@ min_icr = st.sidebar.number_input(
     help="Minimum Interest Coverage Ratio"
 )
 
+# Filter validation
+validation_errors = []
+
+if min_revenue_cagr > min_pat_cagr:
+    validation_errors.append("Revenue CAGR minimum cannot be greater than PAT CAGR minimum")
+
+if max_de < 0:
+    validation_errors.append("D/E maximum cannot be negative")
+
+if min_roe < 0:
+    validation_errors.append("ROE minimum cannot be negative")
+
+if max_pe < 0:
+    validation_errors.append("P/E maximum cannot be negative")
+
+if max_pb < 0:
+    validation_errors.append("P/B maximum cannot be negative")
+
+if validation_errors:
+    st.error("Filter Validation Errors:")
+    for error in validation_errors:
+        st.error(f"• {error}")
+    st.stop()
+
 # Apply filters
 filtered_df = ratios_df.copy()
 
