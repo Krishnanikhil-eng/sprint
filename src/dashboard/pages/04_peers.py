@@ -185,3 +185,52 @@ if benchmark_data is not None and peer_avg_values is not None:
     )
     
     st.plotly_chart(fig, use_container_width=True)
+
+# KPI comparison table
+st.subheader("KPI Comparison Table")
+
+if not peer_data.empty:
+    # Select columns for comparison table
+    table_cols = [
+        'company_name',
+        'return_on_equity_pct',
+        'roce_pct',
+        'debt_to_equity',
+        'net_profit_margin_pct',
+        'operating_profit_margin_pct',
+        'asset_turnover',
+        'free_cash_flow_cr',
+        'revenue_cagr_5yr'
+    ]
+    
+    available_table_cols = [col for col in table_cols if col in peer_data.columns]
+    comparison_df = peer_data[available_table_cols].copy()
+    
+    # Format values
+    for col in available_table_cols:
+        if col != 'company_name':
+            comparison_df[col] = comparison_df[col].round(2)
+    
+    # Highlight benchmark row
+    if benchmark_data is not None:
+        benchmark_name = benchmark_data['company_name']
+        comparison_df['is_benchmark'] = comparison_df['company_name'] == benchmark_name
+    
+    # Rename columns
+    col_rename = {
+        'company_name': 'Company',
+        'return_on_equity_pct': 'ROE (%)',
+        'roce_pct': 'ROCE (%)',
+        'debt_to_equity': 'D/E',
+        'net_profit_margin_pct': 'NPM (%)',
+        'operating_profit_margin_pct': 'OPM (%)',
+        'asset_turnover': 'Asset Turnover',
+        'free_cash_flow_cr': 'FCF (Cr)',
+        'revenue_cagr_5yr': 'Rev CAGR (%)'
+    }
+    comparison_df = comparison_df.rename(columns=col_rename)
+    
+    # Display with highlighting
+    st.dataframe(comparison_df, use_container_width=True, height=400)
+else:
+    st.warning("No peer data available for comparison")
