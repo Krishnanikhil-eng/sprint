@@ -221,6 +221,91 @@ def run_valuation_engine() -> pd.DataFrame:
     return valuation_df
 
 
+def export_valuation_summary(valuation_df: pd.DataFrame, output_path: str = "output/valuation_summary.xlsx") -> None:
+    """Export valuation summary to Excel file."""
+    if valuation_df.empty:
+        print("Warning: No data to export")
+        return
+    
+    # Create output directory if it doesn't exist
+    output_dir = Path(output_path).parent
+    output_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Select required columns
+    required_cols = [
+        'company_id',
+        'company_name',
+        'broad_sector',
+        'pe_ratio',
+        'pb_ratio',
+        'ev_ebitda',
+        'FCF_yield_pct',
+        'PE_vs_sector_median_pct',
+        'flag'
+    ]
+    
+    # Add 5yr_median_PE placeholder (using current PE as proxy)
+    if 'pe_ratio' in valuation_df.columns:
+        valuation_df['5yr_median_PE'] = valuation_df['pe_ratio']
+        required_cols.insert(7, '5yr_median_PE')
+    
+    # Filter available columns
+    export_cols = [col for col in required_cols if col in valuation_df.columns]
+    export_df = valuation_df[export_cols].copy()
+    
+    # Rename columns for output
+    col_rename = {
+        'company_id': 'company_id',
+        'company_name': 'company_name',
+        'broad_sector': 'sector',
+        'pe_ratio': 'P/E',
+        'pb_ratio': 'P/B',
+        'ev_ebitda': 'EV/EBITDA',
+        'FCF_yield_pct': 'FCF_yield_pct',
+        '5yr_median_PE': '5yr_median_PE',
+        'PE_vs_sector_median_pct': 'PE_vs_sector_median_pct',
+        'flag': 'flag'
+    }
+    export_df = export_df.rename(columns=col_rename)
+    
+    # Export to Excel
+    try:
+        export_df.to_excel(output_path, index=False)
+        print(f"Exported valuation summary to {output_path} with {len(export_df)} rows")
+    except Exception as e:
+        print(f"Error exporting valuation summary: {e}")
+
+
+def export_valuation_flags(valuation_df: pd.DataFrame, output_path: str = "output/valuation_flags.csv") -> None:
+    """Export only Caution and Discount flags to CSV."""
+    if valuation_df.empty:
+        print("Warning: No data to export")
+        return
+    
+    # Filter for Caution and Discount flags
+    flags_df = valuation_df[valuation_df['flag'].isin(['Caution', 'Discount'])].copy()
+    
+    if flags_df.empty:
+        print("Warning: No Caution or Discount flags found")
+        return
+    
+    # Select relevant columns
+    export_cols = ['company_id', 'company_name', 'broad_sector', 'pe_ratio', 'FCF_yield_pct', 'flag']
+    available_cols = [col for col in export_cols if col in flags_df.columns]
+    export_df = flags_df[available_cols].copy()
+    
+    # Create output directory if it doesn't exist
+    output_dir = Path(output_path).parent
+    output_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Export to CSV
+    try:
+        export_df.to_csv(output_path, index=False)
+        print(f"Exported valuation flags to {output_path} with {len(export_df)} rows")
+    except Exception as e:
+        print(f"Error exporting valuation flags: {e}")
+
+
 if __name__ == '__main__':
     result = run_valuation_engine()
     if not result.empty:
