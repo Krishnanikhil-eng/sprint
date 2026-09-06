@@ -119,11 +119,16 @@ def compute_fcf_yield(market_cap_df: pd.DataFrame, ratios_df: pd.DataFrame) -> p
 
 
 def calculate_sector_median_pe(valuation_df: pd.DataFrame) -> Dict[str, float]:
-    """Calculate median P/E for each broad sector."""
+    """Calculate median P/E for each broad sector using latest available year."""
     sector_medians = {}
     
     if 'pe_ratio' not in valuation_df.columns or 'broad_sector' not in valuation_df.columns:
+        print("Warning: Required columns (pe_ratio, broad_sector) not found")
         return sector_medians
+    
+    missing_pe = valuation_df['pe_ratio'].isna().sum()
+    if missing_pe > 0:
+        print(f"Warning: {missing_pe} companies missing P/E values")
     
     for sector in valuation_df['broad_sector'].dropna().unique():
         sector_data = valuation_df[valuation_df['broad_sector'] == sector]
@@ -131,6 +136,9 @@ def calculate_sector_median_pe(valuation_df: pd.DataFrame) -> Dict[str, float]:
         
         if not pe_values.empty:
             sector_medians[sector] = pe_values.median()
+            print(f"Sector {sector}: Median P/E = {sector_medians[sector]:.2f}")
+        else:
+            print(f"Warning: No valid P/E values for sector {sector}")
     
     return sector_medians
 
