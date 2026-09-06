@@ -70,3 +70,22 @@ if search_query:
 else:
     st.info("Please search or select a company to view profile")
     st.stop()
+
+# Company Card
+st.markdown("---")
+st.subheader("Company Information")
+
+col1, col2 = st.columns(2)
+
+with col1:
+    st.markdown(f"**Company Name:** {company_data.get('company_name', LABEL_NA)}")
+    st.markdown(f"**Sector:** {company_data.get('broad_sector', LABEL_NA)}")
+    st.markdown(f"**Sub-Sector:** {company_data.get('sub_sector', LABEL_NA)}")
+
+with col2:
+    st.markdown(f"**NSE Ticker:** {company_data.get('nse_profile', LABEL_NA)}")
+    
+about = company_data.get('about_company', LABEL_NA)
+if pd.isna(about) or about is None:
+    about = LABEL_NA
+st.markdown(f"**About:** {about}")
