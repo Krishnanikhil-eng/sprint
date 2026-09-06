@@ -120,3 +120,24 @@ if not sectors_df.empty:
     st.plotly_chart(fig, use_container_width=True)
 else:
     st.warning("No sector data available")
+
+st.markdown("---")
+
+# Quality Ranking
+st.subheader("Top 5 Companies by Quality Score")
+
+if 'composite_quality_score' in ratios_df.columns:
+    top_quality = ratios_df.nlargest(5, 'composite_quality_score')[['company_name', 'composite_quality_score', 'broad_sector']]
+    top_quality = top_quality.dropna(subset=['composite_quality_score'])
+    
+    if not top_quality.empty:
+        for idx, row in top_quality.iterrows():
+            score = row['composite_quality_score']
+            if pd.notna(score):
+                st.markdown(f"**{row['company_name']}** ({row['broad_sector']}) - Score: {score:.2f}")
+            else:
+                st.markdown(f"**{row['company_name']}** ({row['broad_sector']}) - Score: {LABEL_NA}")
+    else:
+        st.info("No quality scores available")
+else:
+    st.info("Quality score data not available")
