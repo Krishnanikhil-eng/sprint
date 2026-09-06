@@ -5,6 +5,7 @@ Home Screen - KPI Dashboard
 import streamlit as st
 import pandas as pd
 import numpy as np
+import plotly.express as px
 
 from src.dashboard.utils.db import get_latest_ratios_all, get_sectors
 from src.dashboard.config import LABEL_NA
@@ -95,3 +96,27 @@ with col6:
     )
 
 st.markdown("---")
+
+# Sector Breakdown Chart
+st.subheader("Sector Breakdown")
+
+if not sectors_df.empty:
+    sector_counts = sectors_df['broad_sector'].value_counts().reset_index()
+    sector_counts.columns = ['Sector', 'Count']
+    
+    fig = px.pie(
+        sector_counts,
+        values='Count',
+        names='Sector',
+        hole=0.4,
+        title='Company Distribution by Sector'
+    )
+    fig.update_traces(textposition='inside', textinfo='percent+label')
+    fig.update_layout(
+        height=400,
+        showlegend=True,
+        margin=dict(l=20, r=20, t=40, b=20)
+    )
+    st.plotly_chart(fig, use_container_width=True)
+else:
+    st.warning("No sector data available")
