@@ -87,3 +87,57 @@ if revenue_col and 'return_on_equity_pct' in bubble_data.columns:
         st.warning("Insufficient data for bubble chart")
 else:
     st.warning("Required columns (Revenue, ROE) not available for bubble chart")
+
+# Sector median KPIs bar chart
+st.subheader(f"{selected_sector} - Median KPIs")
+
+kpi_metrics = [
+    'return_on_equity_pct',
+    'roce_pct',
+    'debt_to_equity',
+    'net_profit_margin_pct',
+    'operating_profit_margin_pct',
+    'revenue_cagr_5yr',
+    'pat_cagr_5yr'
+]
+
+kpi_labels = {
+    'return_on_equity_pct': 'ROE (%)',
+    'roce_pct': 'ROCE (%)',
+    'debt_to_equity': 'D/E',
+    'net_profit_margin_pct': 'NPM (%)',
+    'operating_profit_margin_pct': 'OPM (%)',
+    'revenue_cagr_5yr': 'Rev CAGR (%)',
+    'pat_cagr_5yr': 'PAT CAGR (%)'
+}
+
+available_kpis = [m for m in kpi_metrics if m in sector_df.columns]
+
+if available_kpis:
+    # Calculate medians
+    median_values = {}
+    for metric in available_kpis:
+        median_val = sector_df[metric].median()
+        median_values[kpi_labels.get(metric, metric)] = median_val
+    
+    # Create bar chart
+    median_df = pd.DataFrame(list(median_values.items()), columns=['KPI', 'Median'])
+    median_df = median_df.dropna(subset=['Median'])
+    
+    if not median_df.empty:
+        fig = px.bar(
+            median_df,
+            x='KPI',
+            y='Median',
+            title=f"{selected_sector} - Median KPIs",
+            labels={'Median': 'Median Value', 'KPI': 'Key Performance Indicator'}
+        )
+        fig.update_layout(
+            height=400,
+            margin=dict(l=20, r=20, t=40, b=20)
+        )
+        st.plotly_chart(fig, use_container_width=True)
+    else:
+        st.warning("No median data available")
+else:
+    st.warning("No KPI metrics available for sector analysis")
