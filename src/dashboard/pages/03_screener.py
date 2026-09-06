@@ -6,7 +6,7 @@ import streamlit as st
 import pandas as pd
 
 from src.dashboard.utils.db import get_latest_ratios_all
-from src.dashboard.config import SCREENER_DEFAULTS, LABEL_NA
+from src.dashboard.config import SCREENER_DEFAULTS, LABEL_NA, PRESET_STRATEGIES
 
 st.header("Stock Screener")
 
@@ -23,6 +23,40 @@ if ratios_df.empty:
 
 # Sidebar filters
 st.sidebar.header("Filter Criteria")
+
+# Preset strategies
+st.sidebar.subheader("Preset Strategies")
+preset = st.sidebar.selectbox(
+    "Select a preset strategy",
+    options=["Custom"] + list(PRESET_STRATEGIES.keys()),
+    index=0,
+    help="Pre-defined filter combinations"
+)
+
+if preset != "Custom":
+    preset_values = PRESET_STRATEGIES[preset]
+    if 'min_roe' in preset_values:
+        min_roe = preset_values['min_roe']
+    if 'max_de' in preset_values:
+        max_de = preset_values['max_de']
+    if 'min_opm' in preset_values:
+        min_opm = preset_values['min_opm']
+    if 'max_pe' in preset_values:
+        max_pe = preset_values['max_pe']
+    if 'max_pb' in preset_values:
+        max_pb = preset_values['max_pb']
+    if 'min_dividend_yield' in preset_values:
+        min_dividend_yield = preset_values['min_dividend_yield']
+    if 'min_revenue_cagr' in preset_values:
+        min_revenue_cagr = preset_values['min_revenue_cagr']
+    if 'min_pat_cagr' in preset_values:
+        min_pat_cagr = preset_values['min_pat_cagr']
+    if 'min_fcf' in preset_values:
+        min_fcf = preset_values['min_fcf']
+    
+    st.sidebar.info(f"Applied preset: {preset}")
+
+st.sidebar.markdown("---")
 
 min_roe = st.sidebar.number_input(
     "ROE Minimum (%)",
