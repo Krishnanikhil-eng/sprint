@@ -38,6 +38,7 @@ SECTORS = [
 CHART_HEIGHT = 400
 CHART_WIDTH = None  # Auto-fit
 TABLE_HEIGHT = 400
+MAX_WIDTH = 1200  # Maximum container width for responsiveness
 
 # Common labels
 LABEL_NA = "N/A"
