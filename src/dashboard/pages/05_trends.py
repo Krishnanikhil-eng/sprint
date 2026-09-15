@@ -142,13 +142,20 @@ fig.update_layout(
 st.plotly_chart(fig, use_container_width=True)
 
 # YoY change annotations
-st.subheader("Year-over-Year Changes")
+st.subheader("Year-over-Year Changes (%)")
 
 def calculate_yoy_change(current, previous):
-    """Calculate YoY percentage change."""
-    if pd.isna(current) or pd.isna(previous) or previous == 0:
+    """Calculate YoY percentage change safely."""
+    if pd.isna(current) or pd.isna(previous) or current is None or previous is None:
         return None
-    return ((current - previous) / previous) * 100
+    try:
+        curr_val = float(current)
+        prev_val = float(previous)
+        if prev_val == 0:
+            return None
+        return ((curr_val - prev_val) / abs(prev_val)) * 100.0
+    except (ValueError, TypeError):
+        return None
 
 # Create YoY change table
 yoy_data = []
@@ -156,12 +163,12 @@ ratios_sorted = ratios_data.sort_values('year')
 
 for i in range(len(ratios_sorted)):
     if i == 0:
-        continue  # Skip first year (no previous year)
+        continue  # Skip first year (no previous year available)
     
     current_row = ratios_sorted.iloc[i]
     prev_row = ratios_sorted.iloc[i-1]
     
-    row_data = {'Year': current_row['year']}
+    row_data = {'Year': f"{current_row['year']} (vs {prev_row['year']})"}
     for metric in selected_metrics:
         current_val = current_row.get(metric)
         prev_val = prev_row.get(metric)
@@ -177,8 +184,9 @@ if yoy_data:
     for metric in selected_metrics:
         label = metric_labels.get(metric, metric)
         if label in yoy_df.columns:
-            yoy_df[label] = yoy_df[label].apply(lambda x: f"{x:.2f}%" if pd.notna(x) else "N/A")
+            yoy_df[label] = yoy_df[label].apply(lambda x: f"{x:+.2f}%" if pd.notna(x) and x is not None else LABEL_NA)
     
-    st.dataframe(yoy_df, use_container_width=True, height=300)
+    st.dataframe(yoy_df, use_container_width=True, height=350)
 else:
-    st.info("Insufficient data for YoY analysis")
+    st.info("Insufficient historical data for Year-over-Year analysis")
+
