@@ -181,40 +181,84 @@ def get_valuation(ticker: str) -> pd.DataFrame:
 
 
 @st.cache_data(ttl=600)
-def get_latest_ratios_all() -> pd.DataFrame:
-    """Get latest financial ratios for all companies with optimized query."""
+def get_latest_ratios_all(year: Optional[int] = None) -> pd.DataFrame:
+    """Get financial ratios and valuation metrics for all companies (for a specific year or latest year)."""
     conn = get_connection()
     try:
-        query = """
-        WITH LatestRatios AS (
-            SELECT f.*,
-                   ROW_NUMBER() OVER (PARTITION BY f.company_id ORDER BY f.year DESC) as rn
+        if year:
+            query = """
+            SELECT 
+                f.company_id,
+                c.company_name,
+                s.broad_sector,
+                s.sub_sector,
+                f.year,
+                f.return_on_equity_pct,
+                f.roce_pct,
+                f.debt_to_equity,
+                f.net_profit_margin_pct,
+                f.operating_profit_margin_pct,
+                f.asset_turnover,
+                f.free_cash_flow_cr,
+                f.revenue_cagr_5yr,
+                f.pat_cagr_5yr,
+                f.interest_coverage,
+                f.composite_quality_score,
+                f.capital_allocation_pattern,
+                m.market_cap_crore,
+                m.pe_ratio,
+                m.pb_ratio,
+                m.ev_ebitda,
+                m.dividend_yield_pct
             FROM financial_ratios f
-        )
-        SELECT 
-            lr.company_id,
-            c.company_name,
-            s.broad_sector,
-            s.sub_sector,
-            lr.year,
-            lr.return_on_equity_pct,
-            lr.roce_pct,
-            lr.debt_to_equity,
-            lr.net_profit_margin_pct,
-            lr.operating_profit_margin_pct,
-            lr.asset_turnover,
-            lr.free_cash_flow_cr,
-            lr.revenue_cagr_5yr,
-            lr.pat_cagr_5yr,
-            lr.interest_coverage,
-            lr.composite_quality_score,
-            lr.capital_allocation_pattern
-        FROM LatestRatios lr
-        JOIN companies c ON lr.company_id = c.company_id
-        LEFT JOIN sectors s ON lr.company_id = s.company_id
-        WHERE lr.rn = 1
-        """
-        df = pd.read_sql_query(query, conn)
+            JOIN companies c ON f.company_id = c.company_id
+            LEFT JOIN sectors s ON f.company_id = s.company_id
+            LEFT JOIN market_cap m ON f.company_id = m.company_id AND f.year = m.year
+            WHERE f.year = ?
+            """
+            df = pd.read_sql_query(query, conn, params=(year,))
+        else:
+            query = """
+            WITH LatestRatios AS (
+                SELECT f.*,
+                       ROW_NUMBER() OVER (PARTITION BY f.company_id ORDER BY f.year DESC) as rn
+                FROM financial_ratios f
+            ),
+            LatestMarketCap AS (
+                SELECT m.*,
+                       ROW_NUMBER() OVER (PARTITION BY m.company_id ORDER BY m.year DESC) as rn
+                FROM market_cap m
+            )
+            SELECT 
+                lr.company_id,
+                c.company_name,
+                s.broad_sector,
+                s.sub_sector,
+                lr.year,
+                lr.return_on_equity_pct,
+                lr.roce_pct,
+                lr.debt_to_equity,
+                lr.net_profit_margin_pct,
+                lr.operating_profit_margin_pct,
+                lr.asset_turnover,
+                lr.free_cash_flow_cr,
+                lr.revenue_cagr_5yr,
+                lr.pat_cagr_5yr,
+                lr.interest_coverage,
+                lr.composite_quality_score,
+                lr.capital_allocation_pattern,
+                mc.market_cap_crore,
+                mc.pe_ratio,
+                mc.pb_ratio,
+                mc.ev_ebitda,
+                mc.dividend_yield_pct
+            FROM LatestRatios lr
+            JOIN companies c ON lr.company_id = c.company_id
+            LEFT JOIN sectors s ON lr.company_id = s.company_id
+            LEFT JOIN LatestMarketCap mc ON lr.company_id = mc.company_id AND mc.rn = 1
+            WHERE lr.rn = 1
+            """
+            df = pd.read_sql_query(query, conn)
         return df
     finally:
         conn.close()
