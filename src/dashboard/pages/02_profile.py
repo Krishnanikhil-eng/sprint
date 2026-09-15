@@ -34,15 +34,12 @@ with search_col1:
     )
 
 with search_col2:
-    if not companies_df.empty:
-        company_options = ["Select a company..."] + sorted(companies_df['company_name'].tolist())
-        selected_company = st.selectbox(
-            "Or select from list",
-            options=company_options,
-            index=0
-        )
-    else:
-        selected_company = None
+    company_options = ["Select a company..."] + sorted(companies_df['company_name'].dropna().unique().tolist())
+    selected_company = st.selectbox(
+        "Or select from list",
+        options=company_options,
+        index=0
+    )
 
 # Determine search query
 search_query = None
@@ -53,15 +50,24 @@ elif search_term:
 
 # Find matching company
 ticker = None
+company_data = None
+
 if search_query:
-    # Try exact match on company name
-    match = companies_df[companies_df['company_name'].str.lower() == search_query.lower()]
+    query_lower = search_query.lower()
+    # Try exact match on company name or nse ticker or company_id
+    match = companies_df[
+        (companies_df['company_name'].str.lower() == query_lower) |
+        (companies_df['nse_profile'].astype(str).str.lower() == query_lower) |
+        (companies_df['company_id'].astype(str).str.lower() == query_lower)
+    ]
+    
     if match.empty:
-        # Try exact match on ticker
-        match = companies_df[companies_df['nse_profile'].str.lower() == search_query.lower()]
-    if match.empty:
-        # Try partial match on company name
-        match = companies_df[companies_df['company_name'].str.contains(search_query, case=False, na=False)]
+        # Try partial match on company name or ticker
+        match = companies_df[
+            companies_df['company_name'].str.contains(search_query, case=False, na=False) |
+            companies_df['nse_profile'].astype(str).str.contains(search_query, case=False, na=False) |
+            companies_df['company_id'].astype(str).str.contains(search_query, case=False, na=False)
+        ]
     
     if not match.empty:
         ticker = match.iloc[0]['company_id']
@@ -85,10 +91,10 @@ with col1:
     st.markdown(f"**Sub-Sector:** {company_data.get('sub_sector', LABEL_NA)}")
 
 with col2:
-    st.markdown(f"**NSE Ticker:** {company_data.get('nse_profile', LABEL_NA)}")
-    
+    st.markdown(f"**NSE Ticker:** {company_data.get('nse_profile', company_data.get('company_id', LABEL_NA))}")
+
 about = company_data.get('about_company', LABEL_NA)
-if pd.isna(about) or about is None:
+if pd.isna(about) or not about:
     about = LABEL_NA
 st.markdown(f"**About:** {about}")
 
@@ -103,21 +109,25 @@ except Exception as e:
 st.markdown("---")
 st.subheader("Key Performance Indicators")
 
+def format_kpi(value, metric_type="percentage"):
+    if pd.isna(value) or value is None:
+        return LABEL_NA
+    try:
+        val_float = float(value)
+        if metric_type == "percentage":
+            return f"{val_float:.2f}%"
+        elif metric_type == "currency":
+            return f"₹{val_float:.2f} Cr"
+        else:
+            return f"{val_float:.2f}"
+    except (ValueError, TypeError):
+        return LABEL_NA
+
 if not ratios_data.empty:
     latest_ratios = ratios_data.iloc[0]
     
     kpi1, kpi2, kpi3 = st.columns(3)
     kpi4, kpi5, kpi6 = st.columns(3)
-    
-    def format_kpi(value, metric_type="percentage"):
-        if pd.isna(value) or value is None:
-            return LABEL_NA
-        if metric_type == "percentage":
-            return f"{value:.2f}%"
-        elif metric_type == "currency":
-            return f"₹{value:.2f} Cr"
-        else:
-            return f"{value:.2f}"
     
     with kpi1:
         roe = latest_ratios.get('return_on_equity_pct')
@@ -156,17 +166,14 @@ except Exception as e:
     st.error(f"Error loading P&L data: {e}")
     pl_data = pd.DataFrame()
 
-if not pl_data.empty:
-    # Revenue and Net Profit bar chart
-    chart_col1, chart_col2 = st.columns(2)
-    
-    with chart_col1:
-        st.markdown("**Revenue & Net Profit (Available Years)**")
+chart_col1, chart_col2 = st.columns(2)
+
+with chart_col1:
+    st.markdown("**Revenue & Net Profit (10-Year Trend)**")
+    if not pl_data.empty and 'sales' in pl_data.columns:
         pl_sorted = pl_data.sort_values('year').tail(10)
-        
-        # Handle missing values
-        pl_sorted['sales'] = pl_sorted['sales'].fillna(0)
-        pl_sorted['net_profit'] = pl_sorted['net_profit'].fillna(0)
+        pl_sorted['sales'] = pd.to_numeric(pl_sorted['sales'], errors='coerce').fillna(0)
+        pl_sorted['net_profit'] = pd.to_numeric(pl_sorted['net_profit'], errors='coerce').fillna(0)
         
         if len(pl_sorted) > 0:
             fig1 = go.Figure()
@@ -174,13 +181,13 @@ if not pl_data.empty:
                 x=pl_sorted['year'],
                 y=pl_sorted['sales'],
                 name='Revenue',
-                marker_color='blue'
+                marker_color='#1f77b4'
             ))
             fig1.add_trace(go.Bar(
                 x=pl_sorted['year'],
                 y=pl_sorted['net_profit'],
                 name='Net Profit',
-                marker_color='green'
+                marker_color='#2ca02c'
             ))
             fig1.update_layout(
                 barmode='group',
@@ -191,15 +198,16 @@ if not pl_data.empty:
             )
             st.plotly_chart(fig1, use_container_width=True)
         else:
-            st.warning("No P&L data available for chart")
-    
-    with chart_col2:
-        st.markdown("**ROE & ROCE Trend (Available Years)**")
+            st.info("No P&L trend data available")
+    else:
+        st.info("No P&L data available for chart")
+
+with chart_col2:
+    st.markdown("**ROE & ROCE Trend**")
+    if not ratios_data.empty:
         ratios_sorted = ratios_data.sort_values('year').tail(10)
-        
-        # Handle missing values
-        ratios_sorted['return_on_equity_pct'] = ratios_sorted['return_on_equity_pct'].fillna(0)
-        ratios_sorted['roce_pct'] = ratios_sorted['roce_pct'].fillna(0)
+        ratios_sorted['return_on_equity_pct'] = pd.to_numeric(ratios_sorted['return_on_equity_pct'], errors='coerce')
+        ratios_sorted['roce_pct'] = pd.to_numeric(ratios_sorted['roce_pct'], errors='coerce')
         
         if len(ratios_sorted) > 0:
             fig2 = go.Figure()
@@ -207,21 +215,21 @@ if not pl_data.empty:
                 x=ratios_sorted['year'],
                 y=ratios_sorted['return_on_equity_pct'],
                 mode='lines+markers',
-                name='ROE',
-                line=dict(color='blue')
+                name='ROE (%)',
+                line=dict(color='#1f77b4', width=2)
             ))
             fig2.add_trace(go.Scatter(
                 x=ratios_sorted['year'],
                 y=ratios_sorted['roce_pct'],
                 mode='lines+markers',
-                name='ROCE',
-                line=dict(color='orange'),
+                name='ROCE (%)',
+                line=dict(color='#ff7f0e', width=2),
                 yaxis='y2'
             ))
             fig2.update_layout(
                 height=400,
                 xaxis_title='Year',
-                yaxis_title='ROE (%)',
+                yaxis=dict(title='ROE (%)'),
                 yaxis2=dict(
                     title='ROCE (%)',
                     overlaying='y',
@@ -231,9 +239,9 @@ if not pl_data.empty:
             )
             st.plotly_chart(fig2, use_container_width=True)
         else:
-            st.warning("No ratio data available for chart")
-else:
-    st.warning("No P&L data available for charts")
+            st.info("No ratio trend data available")
+    else:
+        st.info("No ratio data available for chart")
 
 # Pros and Cons
 st.markdown("---")
@@ -257,7 +265,7 @@ if not pros_cons_data.empty:
             for pro in pros_list:
                 st.markdown(f"✅ {pro}")
         else:
-            st.info("No pros data available")
+            st.info("No positive analytical signals reported")
     
     with cons_col:
         st.markdown("### ❌ Cons")
@@ -267,6 +275,7 @@ if not pros_cons_data.empty:
             for con in cons_list:
                 st.markdown(f"❌ {con}")
         else:
-            st.info("No cons data available")
+            st.info("No negative analytical warnings reported")
 else:
     st.info("No pros and cons data available for this company")
+
