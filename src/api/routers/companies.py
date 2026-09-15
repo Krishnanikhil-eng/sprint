@@ -257,7 +257,7 @@ def get_company_ratios(
 
 @router.get("/companies/{ticker}/tearsheet")
 def get_company_tearsheet_pdf(ticker: str) -> FileResponse:
-    """Returns pre-generated 2-page tearsheet PDF for the company."""
+    """Returns pre-generated 2-page tearsheet PDF for the specified company ticker."""
     ticker_upper = ticker.strip().upper()
     pdf_path = os.path.join("reports", "tearsheets", f"{ticker_upper}_tearsheet.pdf")
 
