@@ -231,7 +231,7 @@ def get_company_ratios(
     year: Optional[int] = Query(None, description="Specific year YYYY"),
     db: sqlite3.Connection = Depends(get_db)
 ) -> List[Dict[str, Any]]:
-    """Returns financial ratios for a company, optionally filtered by year."""
+    """Returns financial ratios for a company, optionally filtered by year YYYY."""
     ticker_upper = ticker.strip().upper()
 
     query = "SELECT * FROM financial_ratios WHERE UPPER(company_id) = ?"
