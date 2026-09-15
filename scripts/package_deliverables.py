@@ -17,6 +17,8 @@ def package_deliverables():
         ("docs/openapi.json", "openapi.json"),
         ("docs/postman_collection.json", "postman_collection.json"),
         ("docs/analyst_guide.pdf", "analyst_guide.pdf"),
+        ("docs/acceptance_checklist.pdf", "acceptance_checklist.pdf"),
+        ("output/sprint6_final_validation_report.txt", "sprint6_final_validation_report.txt"),
         ("output/cluster_labels.csv", "cluster_labels.csv"),
         ("output/outlier_report.csv", "outlier_report.csv"),
         ("output/portfolio_stats.csv", "portfolio_stats.csv"),
