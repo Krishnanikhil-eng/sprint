@@ -23,7 +23,10 @@ def test_screener_filtered_roe_and_sector():
     assert isinstance(data, list)
     for company in data:
         assert company["return_on_equity_pct"] >= 15.0
-        assert "FINANCIAL" in company["sector"].upper() or "BANK" in company["sector"].upper()
+        assert (
+            "FINANCIAL" in company["sector"].upper()
+            or "BANK" in company["sector"].upper()
+        )
 
 
 def test_screener_invalid_negative_de():

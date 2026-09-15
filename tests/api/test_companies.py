@@ -2,7 +2,6 @@
 Unit tests for Day 39 Company Data API Endpoints.
 """
 
-import pytest
 from fastapi.testclient import TestClient
 from src.api.main import app
 
@@ -14,7 +13,9 @@ def test_get_companies_list():
     assert response.status_code == 200
     data = response.json()
     assert len(data) == 92
-    assert set(data[0].keys()).issuperset({"id", "company_name", "broad_sector", "roe_pct", "roce_pct"})
+    assert set(data[0].keys()).issuperset(
+        {"id", "company_name", "broad_sector", "roe_pct", "roce_pct"}
+    )
 
 
 def test_get_companies_filter_and_search():

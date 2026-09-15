@@ -7,7 +7,7 @@ import os
 import sqlite3
 from typing import Dict, Any, List
 import pandas as pd
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 
 from src.api.database import get_db
 
@@ -32,13 +32,15 @@ def get_portfolio_stats(db: sqlite3.Connection = Depends(get_db)) -> Dict[str, A
 
     # Sector distribution count
     cursor = db.cursor()
-    cursor.execute("""
+    cursor.execute(
+        """
         SELECT broad_sector as sector, COUNT(company_id) as count
         FROM sectors
         WHERE broad_sector IS NOT NULL AND broad_sector != ''
         GROUP BY broad_sector
         ORDER BY count DESC;
-    """)
+    """
+    )
     sector_dist = [dict(row) for row in cursor.fetchall()]
 
     # Cluster distribution count from cluster_labels.csv
@@ -49,7 +51,9 @@ def get_portfolio_stats(db: sqlite3.Connection = Depends(get_db)) -> Dict[str, A
             df_clusters = pd.read_csv(cluster_path)
             if "cluster_label" in df_clusters.columns:
                 counts = df_clusters["cluster_label"].value_counts().to_dict()
-                cluster_dist = [{"archetype": k, "count": int(v)} for k, v in counts.items()]
+                cluster_dist = [
+                    {"archetype": k, "count": int(v)} for k, v in counts.items()
+                ]
         except Exception:
             cluster_dist = []
 
@@ -57,5 +61,5 @@ def get_portfolio_stats(db: sqlite3.Connection = Depends(get_db)) -> Dict[str, A
         "total_companies": 92,
         "kpi_distributions": kpi_distributions,
         "sector_allocation": sector_dist,
-        "cluster_archetypes": cluster_dist
+        "cluster_archetypes": cluster_dist,
     }

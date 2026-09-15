@@ -23,7 +23,7 @@ def test_concurrent_api_load_performance():
         "/api/v1/companies/TCS",
         "/api/v1/companies/RELIANCE/ratios",
         "/api/v1/companies/HDFCBANK/documents",
-        "/api/v1/market-cap/INFY"
+        "/api/v1/market-cap/INFY",
     ]
 
     start_time = time.time()
@@ -31,7 +31,9 @@ def test_concurrent_api_load_performance():
 
     def fetch_url(url: str):
         res = client.get(url)
-        return res.status_code, res.elapsed.total_seconds() if hasattr(res, "elapsed") else 0
+        return res.status_code, (
+            res.elapsed.total_seconds() if hasattr(res, "elapsed") else 0
+        )
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
         futures = [executor.submit(fetch_url, url) for url in urls]
@@ -55,4 +57,6 @@ def test_company_profile_loading_latency():
         assert res.status_code == 200
 
     total_time = time.time() - start_time
-    assert total_time < 3.0, f"Profile loading latency exceeded limit: {total_time:.2f}s"
+    assert (
+        total_time < 3.0
+    ), f"Profile loading latency exceeded limit: {total_time:.2f}s"

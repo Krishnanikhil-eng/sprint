@@ -16,7 +16,7 @@ from src.api.routers import (
     valuation,
     portfolio,
     documents,
-    health
+    health,
 )
 
 logging.basicConfig(level=logging.INFO)
@@ -27,7 +27,7 @@ app = FastAPI(
     description="Production-grade REST API providing financial ratios, cash flow intelligence, screening, valuation, and PDF reports.",
     version="1.0.0",
     docs_url="/docs",
-    redoc_url="/redoc"
+    redoc_url="/redoc",
 )
 
 # 1. CORS Middleware
@@ -46,7 +46,9 @@ async def log_requests(request: Request, call_next):
     start_time = time.time()
     response = await call_next(request)
     process_time = round((time.time() - start_time) * 1000, 2)
-    logger.info(f"{request.method} {request.url.path} - {response.status_code} ({process_time} ms)")
+    logger.info(
+        f"{request.method} {request.url.path} - {response.status_code} ({process_time} ms)"
+    )
     response.headers["X-Process-Time-Ms"] = str(process_time)
     return response
 
@@ -65,4 +67,8 @@ app.include_router(documents.router, prefix=API_PREFIX)
 
 @app.get("/")
 def root():
-    return {"message": "Nifty 100 Financial Analytics API", "docs": "/docs", "health": "/api/v1/health"}
+    return {
+        "message": "Nifty 100 Financial Analytics API",
+        "docs": "/docs",
+        "health": "/api/v1/health",
+    }

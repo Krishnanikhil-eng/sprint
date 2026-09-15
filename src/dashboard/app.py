@@ -7,9 +7,7 @@ import streamlit as st
 from pathlib import Path
 
 st.set_page_config(
-    page_title="Nifty 100 Analytics",
-    layout="wide",
-    initial_sidebar_state="expanded"
+    page_title="Nifty 100 Analytics", layout="wide", initial_sidebar_state="expanded"
 )
 
 st.title("Nifty 100 Analytics Dashboard")
@@ -23,7 +21,7 @@ PAGES = {
     "Trend Analysis": "pages/05_trends.py",
     "Sector Analysis": "pages/06_sectors.py",
     "Capital Allocation": "pages/07_capital.py",
-    "Annual Reports": "pages/08_reports.py"
+    "Annual Reports": "pages/08_reports.py",
 }
 
 st.sidebar.title("Navigation")

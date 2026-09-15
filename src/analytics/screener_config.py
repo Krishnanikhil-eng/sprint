@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 from typing import List, Optional, Any, Dict
 from enum import Enum
 
+
 class FilterOperator(Enum):
     GREATER_THAN = ">"
     GREATER_EQUAL = ">="
@@ -17,9 +18,11 @@ class FilterOperator(Enum):
     BETWEEN = "BETWEEN"
     IN_LIST = "IN"
 
+
 @dataclass
 class FilterCriterion:
     """Represents a single metric filtering rule."""
+
     metric_name: str
     operator: FilterOperator
     value: Optional[float] = None
@@ -32,7 +35,7 @@ class FilterCriterion:
         """Evaluates a single numeric or categorical value against criterion."""
         if val is None:
             return False
-        
+
         try:
             val_float = float(val)
         except (ValueError, TypeError):
@@ -51,8 +54,8 @@ class FilterCriterion:
         elif self.operator == FilterOperator.BETWEEN:
             if val_float is None:
                 return False
-            low = self.min_value if self.min_value is not None else float('-inf')
-            high = self.max_value if self.max_value is not None else float('inf')
+            low = self.min_value if self.min_value is not None else float("-inf")
+            high = self.max_value if self.max_value is not None else float("inf")
             return low <= val_float <= high
         elif self.operator == FilterOperator.IN_LIST:
             if isinstance(self.value, (list, set, tuple)):
@@ -60,9 +63,11 @@ class FilterCriterion:
             return val == self.value
         return False
 
+
 @dataclass
 class ScreenerConfig:
     """Complete screener query configuration container."""
+
     name: str
     description: str
     criteria: List[FilterCriterion] = field(default_factory=list)
@@ -84,23 +89,29 @@ class ScreenerConfig:
             "sort_by": self.sort_by,
             "ascending": self.ascending,
             "limit": self.limit,
-            "criteria_count": len(self.criteria)
+            "criteria_count": len(self.criteria),
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'ScreenerConfig':
+    def from_dict(cls, data: Dict[str, Any]) -> "ScreenerConfig":
         criteria = []
         for c in data.get("criteria", []):
-            op = FilterOperator(c["operator"]) if isinstance(c["operator"], str) else c["operator"]
-            criteria.append(FilterCriterion(
-                metric_name=c["metric_name"],
-                operator=op,
-                value=c.get("value"),
-                min_value=c.get("min_value"),
-                max_value=c.get("max_value"),
-                weight=c.get("weight", 1.0),
-                description=c.get("description", "")
-            ))
+            op = (
+                FilterOperator(c["operator"])
+                if isinstance(c["operator"], str)
+                else c["operator"]
+            )
+            criteria.append(
+                FilterCriterion(
+                    metric_name=c["metric_name"],
+                    operator=op,
+                    value=c.get("value"),
+                    min_value=c.get("min_value"),
+                    max_value=c.get("max_value"),
+                    weight=c.get("weight", 1.0),
+                    description=c.get("description", ""),
+                )
+            )
         return cls(
             name=data.get("name", "Custom Screener"),
             description=data.get("description", ""),
@@ -109,13 +120,13 @@ class ScreenerConfig:
             handle_zero_debt_icr=data.get("handle_zero_debt_icr", True),
             sort_by=data.get("sort_by", "composite_score"),
             ascending=data.get("ascending", False),
-            limit=data.get("limit")
+            limit=data.get("limit"),
         )
 
     @classmethod
-    def from_json(cls, json_path: str) -> 'ScreenerConfig':
+    def from_json(cls, json_path: str) -> "ScreenerConfig":
         import json
-        with open(json_path, 'r', encoding='utf-8') as f:
+
+        with open(json_path, "r", encoding="utf-8") as f:
             data = json.load(f)
         return cls.from_dict(data)
-

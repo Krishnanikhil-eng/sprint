@@ -12,7 +12,7 @@ PAGE_TITLES = {
     "trends": "Trend Analysis",
     "sectors": "Sector Analysis",
     "capital": "Capital Allocation",
-    "reports": "Annual Reports"
+    "reports": "Annual Reports",
 }
 
 # Supported years for analysis
@@ -31,7 +31,7 @@ SECTORS = [
     "Capital Goods",
     "Metals & Mining",
     "Chemicals",
-    "Telecom"
+    "Telecom",
 ]
 
 # Display settings
@@ -51,7 +51,7 @@ METRIC_FORMATS = {
     "currency": "₹{:.2f} Cr",
     "ratio": "{:.2f}",
     "cagr": "{:.2f}%",
-    "integer": "{:.0f}"
+    "integer": "{:.0f}",
 }
 
 # Screener filter defaults
@@ -65,7 +65,7 @@ SCREENER_DEFAULTS = {
     "max_pe": 30.0,
     "max_pb": 5.0,
     "min_dividend_yield": 0.0,
-    "min_icr": 2.0
+    "min_icr": 2.0,
 }
 
 # Preset strategies
@@ -75,7 +75,7 @@ PRESET_STRATEGIES = {
     "Growth": {"min_revenue_cagr": 10.0, "min_pat_cagr": 10.0, "min_roe": 12.0},
     "Dividend": {"min_dividend_yield": 3.0, "max_de": 1.5, "min_roe": 10.0},
     "Debt-Free": {"max_de": 0.1, "min_fcf": 0.0},
-    "Turnaround": {"min_revenue_cagr": -5.0, "min_pat_cagr": -5.0, "min_roe": 5.0}
+    "Turnaround": {"min_revenue_cagr": -5.0, "min_pat_cagr": -5.0, "min_roe": 5.0},
 }
 
 # Database path

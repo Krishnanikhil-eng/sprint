@@ -6,7 +6,7 @@ Cached database loaders for Streamlit dashboard
 import sqlite3
 import streamlit as st
 import pandas as pd
-from typing import Optional, List, Dict, Any
+from typing import Optional
 from pathlib import Path
 
 from src.dashboard.config import DB_PATH

@@ -7,7 +7,11 @@ match the output returned by the REST API endpoint.
 from fastapi.testclient import TestClient
 from src.api.main import app
 from src.analytics.screener_engine import ScreenerEngine
-from src.analytics.screener_config import ScreenerConfig, FilterCriterion, FilterOperator
+from src.analytics.screener_config import (
+    ScreenerConfig,
+    FilterCriterion,
+    FilterOperator,
+)
 
 client = TestClient(app)
 
@@ -23,8 +27,12 @@ def test_screener_engine_vs_api_roe_equivalence():
         name="ROE Test",
         description="Filter min ROE 20%",
         criteria=[
-            FilterCriterion(metric_name="return_on_equity_pct", operator=FilterOperator.GREATER_EQUAL, value=20.0)
-        ]
+            FilterCriterion(
+                metric_name="return_on_equity_pct",
+                operator=FilterOperator.GREATER_EQUAL,
+                value=20.0,
+            )
+        ],
     )
     engine = ScreenerEngine()
     engine.set_config(config)
@@ -46,8 +54,12 @@ def test_screener_engine_vs_api_fcf_equivalence():
         name="FCF Test",
         description="Filter min FCF 500Cr",
         criteria=[
-            FilterCriterion(metric_name="free_cash_flow_cr", operator=FilterOperator.GREATER_EQUAL, value=500.0)
-        ]
+            FilterCriterion(
+                metric_name="free_cash_flow_cr",
+                operator=FilterOperator.GREATER_EQUAL,
+                value=500.0,
+            )
+        ],
     )
     engine = ScreenerEngine()
     engine.set_config(config)

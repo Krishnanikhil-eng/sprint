@@ -2,7 +2,6 @@
 Unit tests for Day 38 FastAPI Health Endpoint and Database Helper.
 """
 
-import pytest
 from fastapi.testclient import TestClient
 
 from src.api.main import app
@@ -32,7 +31,15 @@ def test_health_endpoint():
     assert isinstance(db_counts, dict)
 
     # Verify key project tables are present
-    required_tables = ["companies", "profitandloss", "balancesheet", "cashflow", "financial_ratios", "sectors", "market_cap"]
+    required_tables = [
+        "companies",
+        "profitandloss",
+        "balancesheet",
+        "cashflow",
+        "financial_ratios",
+        "sectors",
+        "market_cap",
+    ]
     for t in required_tables:
         assert t in db_counts
         assert db_counts[t] > 0

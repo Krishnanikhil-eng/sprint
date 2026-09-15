@@ -34,8 +34,7 @@ def get_peer_groups(db: sqlite3.Connection = Depends(get_db)) -> List[Dict[str, 
 
 @router.get("/peers/{group_name}")
 def get_peer_group_members(
-    group_name: str,
-    db: sqlite3.Connection = Depends(get_db)
+    group_name: str, db: sqlite3.Connection = Depends(get_db)
 ) -> Dict[str, Any]:
     """
     Returns company members and aggregate metrics for a specified peer group.
@@ -67,22 +66,20 @@ def get_peer_group_members(
 
     if not rows:
         raise HTTPException(
-            status_code=404,
-            detail=f"Peer group '{group_name}' not found"
+            status_code=404, detail=f"Peer group '{group_name}' not found"
         )
 
     members = [dict(row) for row in rows]
     return {
         "peer_group_name": group_clean,
         "member_count": len(members),
-        "members": members
+        "members": members,
     }
 
 
 @router.get("/companies/{ticker}/peers/compare")
 def compare_company_peers(
-    ticker: str,
-    db: sqlite3.Connection = Depends(get_db)
+    ticker: str, db: sqlite3.Connection = Depends(get_db)
 ) -> Dict[str, Any]:
     """
     Returns peer comparison profile for a company, including peer group percentiles
@@ -92,31 +89,45 @@ def compare_company_peers(
     cursor = db.cursor()
 
     # Verify company exists
-    cursor.execute("SELECT company_id, company_name FROM companies WHERE UPPER(company_id) = ?", (ticker_upper,))
+    cursor.execute(
+        "SELECT company_id, company_name FROM companies WHERE UPPER(company_id) = ?",
+        (ticker_upper,),
+    )
     company = cursor.fetchone()
     if not company:
-        raise HTTPException(status_code=404, detail=f"Company ticker '{ticker}' not found")
+        raise HTTPException(
+            status_code=404, detail=f"Company ticker '{ticker}' not found"
+        )
 
     # Fetch percentiles
-    cursor.execute("SELECT * FROM peer_percentiles WHERE UPPER(company_id) = ?", (ticker_upper,))
+    cursor.execute(
+        "SELECT * FROM peer_percentiles WHERE UPPER(company_id) = ?", (ticker_upper,)
+    )
     pct_row = cursor.fetchone()
-    
+
     percentiles = dict(pct_row) if pct_row else {}
 
     # Fetch peer group members and group averages
-    cursor.execute("""
+    cursor.execute(
+        """
         SELECT pg.peer_group_name 
         FROM peer_groups pg 
         WHERE UPPER(pg.company_id) = ?
         LIMIT 1
-    """, (ticker_upper,))
+    """,
+        (ticker_upper,),
+    )
     pg_res = cursor.fetchone()
-    
-    peer_group_name = pg_res["peer_group_name"] if pg_res else percentiles.get("effective_peer_group", "Unknown")
+
+    peer_group_name = (
+        pg_res["peer_group_name"]
+        if pg_res
+        else percentiles.get("effective_peer_group", "Unknown")
+    )
 
     return {
         "ticker": company["company_id"],
         "company_name": company["company_name"],
         "peer_group": peer_group_name,
-        "percentiles": percentiles
+        "percentiles": percentiles,
     }

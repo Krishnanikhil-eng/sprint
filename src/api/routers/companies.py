@@ -18,9 +18,13 @@ router = APIRouter(tags=["Companies"])
 @router.get("/companies")
 def get_companies(
     sector: Optional[str] = Query(None, description="Filter by broad sector"),
-    market_cap_category: Optional[str] = Query(None, description="Filter by market cap category"),
-    search: Optional[str] = Query(None, description="Search term for ticker or company name"),
-    db: sqlite3.Connection = Depends(get_db)
+    market_cap_category: Optional[str] = Query(
+        None, description="Filter by market cap category"
+    ),
+    search: Optional[str] = Query(
+        None, description="Search term for ticker or company name"
+    ),
+    db: sqlite3.Connection = Depends(get_db),
 ) -> List[Dict[str, Any]]:
     """
     Returns list of companies with basic info and latest ROE/ROCE metrics.
@@ -69,7 +73,9 @@ def get_companies(
 
 
 @router.get("/companies/{ticker}")
-def get_company_detail(ticker: str, db: sqlite3.Connection = Depends(get_db)) -> Dict[str, Any]:
+def get_company_detail(
+    ticker: str, db: sqlite3.Connection = Depends(get_db)
+) -> Dict[str, Any]:
     """
     Returns comprehensive profile and latest financial KPIs for a single company.
     Case-insensitive ticker lookup; returns 404 if not found.
@@ -114,11 +120,13 @@ def get_company_detail(ticker: str, db: sqlite3.Connection = Depends(get_db)) ->
     row = cur.fetchone()
 
     if not row:
-        raise HTTPException(status_code=404, detail=f"Company with ticker '{ticker}' not found.")
+        raise HTTPException(
+            status_code=404, detail=f"Company with ticker '{ticker}' not found."
+        )
 
     res = dict(row)
-    if 'rn' in res:
-        del res['rn']
+    if "rn" in res:
+        del res["rn"]
     return res
 
 
@@ -127,7 +135,7 @@ def get_company_pl(
     ticker: str,
     from_year: Optional[int] = Query(None, description="Start year YYYY"),
     to_year: Optional[int] = Query(None, description="End year YYYY"),
-    db: sqlite3.Connection = Depends(get_db)
+    db: sqlite3.Connection = Depends(get_db),
 ) -> List[Dict[str, Any]]:
     """Returns P&L historical statements for a company."""
     ticker_upper = ticker.strip().upper()
@@ -150,9 +158,13 @@ def get_company_pl(
 
     if not rows:
         # Check if company exists
-        cur.execute("SELECT 1 FROM companies WHERE UPPER(company_id) = ?", (ticker_upper,))
+        cur.execute(
+            "SELECT 1 FROM companies WHERE UPPER(company_id) = ?", (ticker_upper,)
+        )
         if not cur.fetchone():
-            raise HTTPException(status_code=404, detail=f"Company '{ticker}' not found.")
+            raise HTTPException(
+                status_code=404, detail=f"Company '{ticker}' not found."
+            )
 
     return [dict(row) for row in rows]
 
@@ -162,7 +174,7 @@ def get_company_bs(
     ticker: str,
     from_year: Optional[int] = Query(None),
     to_year: Optional[int] = Query(None),
-    db: sqlite3.Connection = Depends(get_db)
+    db: sqlite3.Connection = Depends(get_db),
 ) -> List[Dict[str, Any]]:
     """Returns Balance Sheet historical statements for a company."""
     ticker_upper = ticker.strip().upper()
@@ -184,9 +196,13 @@ def get_company_bs(
     rows = cur.fetchall()
 
     if not rows:
-        cur.execute("SELECT 1 FROM companies WHERE UPPER(company_id) = ?", (ticker_upper,))
+        cur.execute(
+            "SELECT 1 FROM companies WHERE UPPER(company_id) = ?", (ticker_upper,)
+        )
         if not cur.fetchone():
-            raise HTTPException(status_code=404, detail=f"Company '{ticker}' not found.")
+            raise HTTPException(
+                status_code=404, detail=f"Company '{ticker}' not found."
+            )
 
     return [dict(row) for row in rows]
 
@@ -196,7 +212,7 @@ def get_company_cashflow(
     ticker: str,
     from_year: Optional[int] = Query(None),
     to_year: Optional[int] = Query(None),
-    db: sqlite3.Connection = Depends(get_db)
+    db: sqlite3.Connection = Depends(get_db),
 ) -> List[Dict[str, Any]]:
     """Returns Cash Flow historical statements for a company."""
     ticker_upper = ticker.strip().upper()
@@ -218,9 +234,13 @@ def get_company_cashflow(
     rows = cur.fetchall()
 
     if not rows:
-        cur.execute("SELECT 1 FROM companies WHERE UPPER(company_id) = ?", (ticker_upper,))
+        cur.execute(
+            "SELECT 1 FROM companies WHERE UPPER(company_id) = ?", (ticker_upper,)
+        )
         if not cur.fetchone():
-            raise HTTPException(status_code=404, detail=f"Company '{ticker}' not found.")
+            raise HTTPException(
+                status_code=404, detail=f"Company '{ticker}' not found."
+            )
 
     return [dict(row) for row in rows]
 
@@ -229,7 +249,7 @@ def get_company_cashflow(
 def get_company_ratios(
     ticker: str,
     year: Optional[int] = Query(None, description="Specific year YYYY"),
-    db: sqlite3.Connection = Depends(get_db)
+    db: sqlite3.Connection = Depends(get_db),
 ) -> List[Dict[str, Any]]:
     """Returns financial ratios for a company, optionally filtered by year YYYY."""
     ticker_upper = ticker.strip().upper()
@@ -248,9 +268,13 @@ def get_company_ratios(
     rows = cur.fetchall()
 
     if not rows:
-        cur.execute("SELECT 1 FROM companies WHERE UPPER(company_id) = ?", (ticker_upper,))
+        cur.execute(
+            "SELECT 1 FROM companies WHERE UPPER(company_id) = ?", (ticker_upper,)
+        )
         if not cur.fetchone():
-            raise HTTPException(status_code=404, detail=f"Company '{ticker}' not found.")
+            raise HTTPException(
+                status_code=404, detail=f"Company '{ticker}' not found."
+            )
 
     return [dict(row) for row in rows]
 
@@ -262,10 +286,10 @@ def get_company_tearsheet_pdf(ticker: str) -> FileResponse:
     pdf_path = os.path.join("reports", "tearsheets", f"{ticker_upper}_tearsheet.pdf")
 
     if not os.path.exists(pdf_path):
-        raise HTTPException(status_code=404, detail=f"Tearsheet PDF for ticker '{ticker}' not found.")
+        raise HTTPException(
+            status_code=404, detail=f"Tearsheet PDF for ticker '{ticker}' not found."
+        )
 
     return FileResponse(
-        pdf_path,
-        media_type="application/pdf",
-        filename=f"{ticker_upper}_tearsheet.pdf"
+        pdf_path, media_type="application/pdf", filename=f"{ticker_upper}_tearsheet.pdf"
     )

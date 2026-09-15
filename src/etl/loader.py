@@ -5,9 +5,8 @@ and executing the full database load pipeline into nifty100.db.
 """
 
 import io
-import os
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Union, Any
+from typing import Dict, List, Union, Any
 import pandas as pd
 import sqlite3
 import zipfile
@@ -48,7 +47,12 @@ def load_excel(file_path: Union[str, Path, io.BytesIO]) -> pd.DataFrame:
     header_row = 0
     if not raw_df.empty:
         first_val = str(raw_df.iloc[0, 0])
-        if "Fintech" in first_val or "records" in first_val or "Nifty 100" in first_val or "Companies" in first_val:
+        if (
+            "Fintech" in first_val
+            or "records" in first_val
+            or "Nifty 100" in first_val
+            or "Companies" in first_val
+        ):
             header_row = 1
 
     df = pd.read_excel(source_input, header=header_row)
@@ -112,17 +116,49 @@ def load_data(
 
     dataset_configs = [
         {"table": "companies", "file": data_dir / "companies.xlsx", "is_zip": False},
-        {"table": "profitandloss", "file": data_dir / "profitandloss.xlsx", "is_zip": False},
-        {"table": "balancesheet", "file": data_dir / "balancesheet.xlsx", "is_zip": False},
+        {
+            "table": "profitandloss",
+            "file": data_dir / "profitandloss.xlsx",
+            "is_zip": False,
+        },
+        {
+            "table": "balancesheet",
+            "file": data_dir / "balancesheet.xlsx",
+            "is_zip": False,
+        },
         {"table": "cashflow", "file": data_dir / "cashflow.xlsx", "is_zip": False},
         {"table": "analysis", "file": data_dir / "analysis.xlsx", "is_zip": False},
         {"table": "documents", "file": data_dir / "documents.xlsx", "is_zip": False},
-        {"table": "prosandcons", "file": data_dir / "prosandcons.xlsx", "is_zip": False},
-        {"table": "sectors", "file": "supporting datasets/sectors.xlsx", "is_zip": True},
-        {"table": "peer_groups", "file": "supporting datasets/peer_groups.xlsx", "is_zip": True},
-        {"table": "financial_ratios", "file": "supporting datasets/financial_ratios.xlsx", "is_zip": True},
-        {"table": "stock_prices", "file": "supporting datasets/stock_prices.xlsx", "is_zip": True},
-        {"table": "market_cap", "file": "supporting datasets/market_cap.xlsx", "is_zip": True},
+        {
+            "table": "prosandcons",
+            "file": data_dir / "prosandcons.xlsx",
+            "is_zip": False,
+        },
+        {
+            "table": "sectors",
+            "file": "supporting datasets/sectors.xlsx",
+            "is_zip": True,
+        },
+        {
+            "table": "peer_groups",
+            "file": "supporting datasets/peer_groups.xlsx",
+            "is_zip": True,
+        },
+        {
+            "table": "financial_ratios",
+            "file": "supporting datasets/financial_ratios.xlsx",
+            "is_zip": True,
+        },
+        {
+            "table": "stock_prices",
+            "file": "supporting datasets/stock_prices.xlsx",
+            "is_zip": True,
+        },
+        {
+            "table": "market_cap",
+            "file": "supporting datasets/market_cap.xlsx",
+            "is_zip": True,
+        },
     ]
 
     zip_file_path = None
@@ -147,7 +183,9 @@ def load_data(
         try:
             if is_zip:
                 if not zip_file_path or not zip_file_path.exists():
-                    raise FileNotFoundError(f"Supplementary zip archive not found in {data_dir}")
+                    raise FileNotFoundError(
+                        f"Supplementary zip archive not found in {data_dir}"
+                    )
                 with zipfile.ZipFile(zip_file_path, "r") as z:
                     bytes_data = io.BytesIO(z.read(str(file_target).replace("\\", "/")))
                     df_raw = load_excel(bytes_data)
@@ -161,7 +199,9 @@ def load_data(
             if table_name == "companies":
                 if "id" in df_raw.columns:
                     df_raw["company_id"] = df_raw["id"]
-                valid_company_ids = set(df_raw["company_id"].dropna().astype(str).str.strip())
+                valid_company_ids = set(
+                    df_raw["company_id"].dropna().astype(str).str.strip()
+                )
                 valid_cols = [
                     "company_id",
                     "company_logo",
@@ -176,7 +216,9 @@ def load_data(
                     "roce_percentage",
                     "roe_percentage",
                 ]
-                df_to_insert = df_raw[[c for c in valid_cols if c in df_raw.columns]].drop_duplicates(subset=["company_id"])
+                df_to_insert = df_raw[
+                    [c for c in valid_cols if c in df_raw.columns]
+                ].drop_duplicates(subset=["company_id"])
                 rows_rejected = rows_read - len(df_to_insert)
                 if rows_rejected > 0:
                     rejection_reason = "DUPLICATE_COMPANY_ID"
@@ -189,13 +231,28 @@ def load_data(
                     df_working = df_raw.copy()
                     null_year_count = 0
 
-                    if table_name in ["profitandloss", "balancesheet", "cashflow", "financial_ratios", "market_cap"] and "year" in df_working.columns:
+                    if (
+                        table_name
+                        in [
+                            "profitandloss",
+                            "balancesheet",
+                            "cashflow",
+                            "financial_ratios",
+                            "market_cap",
+                        ]
+                        and "year" in df_working.columns
+                    ):
                         valid_year_mask = df_working["year"].notna()
                         null_year_count = int((~valid_year_mask).sum())
                         df_working = df_working[valid_year_mask].copy()
                         df_working["year"] = df_working["year"].astype(int)
 
-                    valid_mask = df_working["company_id"].astype(str).str.strip().isin(valid_company_ids)
+                    valid_mask = (
+                        df_working["company_id"]
+                        .astype(str)
+                        .str.strip()
+                        .isin(valid_company_ids)
+                    )
                     df_valid = df_working[valid_mask].copy()
                     df_invalid = df_working[~valid_mask].copy()
 
@@ -204,9 +261,13 @@ def load_data(
 
                     reasons = []
                     if null_year_count > 0:
-                        reasons.append(f"NULL_YEAR_SUMMARY_ROW ({null_year_count} rows)")
+                        reasons.append(
+                            f"NULL_YEAR_SUMMARY_ROW ({null_year_count} rows)"
+                        )
                     if fk_rejected > 0:
-                        reasons.append(f"FK_VIOLATION_MISSING_PARENT_COMPANY ({fk_rejected} rows)")
+                        reasons.append(
+                            f"FK_VIOLATION_MISSING_PARENT_COMPANY ({fk_rejected} rows)"
+                        )
 
                     rejection_reason = " | ".join(reasons) if reasons else "None"
                     severity = "WARNING" if rows_rejected > 0 else "INFO"
@@ -214,12 +275,22 @@ def load_data(
                     if "id" in df_valid.columns:
                         df_valid = df_valid.drop(columns=["id"])
 
-                    if table_name in ["profitandloss", "balancesheet", "cashflow", "financial_ratios", "market_cap"]:
+                    if table_name in [
+                        "profitandloss",
+                        "balancesheet",
+                        "cashflow",
+                        "financial_ratios",
+                        "market_cap",
+                    ]:
                         if "year" in df_valid.columns:
-                            df_valid = df_valid.drop_duplicates(subset=["company_id", "year"])
+                            df_valid = df_valid.drop_duplicates(
+                                subset=["company_id", "year"]
+                            )
                     elif table_name == "stock_prices":
                         if "date" in df_valid.columns:
-                            df_valid = df_valid.drop_duplicates(subset=["company_id", "date"])
+                            df_valid = df_valid.drop_duplicates(
+                                subset=["company_id", "date"]
+                            )
 
                     cur = conn.cursor()
                     cur.execute(f"PRAGMA table_info('{table_name}')")
@@ -228,7 +299,9 @@ def load_data(
                     cols_to_use = [c for c in db_cols if c in df_valid.columns]
                     df_to_insert = df_valid[cols_to_use]
 
-                    df_to_insert.to_sql(table_name, conn, if_exists="append", index=False)
+                    df_to_insert.to_sql(
+                        table_name, conn, if_exists="append", index=False
+                    )
                     rows_loaded = len(df_to_insert)
                 else:
                     rows_rejected = rows_read

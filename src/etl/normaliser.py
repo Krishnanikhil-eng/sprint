@@ -5,8 +5,7 @@ Handles data cleaning, transformation, and normalization for the Nifty 100 ETL p
 
 import math
 import re
-from typing import Optional, Union, Any
-import pandas as pd
+from typing import Optional, Any
 
 
 def normalize_year(value: Any) -> Optional[int]:
@@ -58,14 +57,14 @@ def normalize_year(value: Any) -> Optional[int]:
             pass
 
         # Check for 4-digit year pattern (e.g. "Dec 2012", "FY 2023", "2023-24")
-        four_digit_match = re.search(r'\b(19\d\d|20\d\d)\b', cleaned)
+        four_digit_match = re.search(r"\b(19\d\d|20\d\d)\b", cleaned)
         if four_digit_match:
             year_int = int(four_digit_match.group(1))
             if 1900 <= year_int <= 2100:
                 return year_int
 
         # Check for Month-YY pattern (e.g. "Mar-13", "Dec-12")
-        two_digit_match = re.search(r'^[A-Za-z]{3}[-\s](\d{2})$', cleaned)
+        two_digit_match = re.search(r"^[A-Za-z]{3}[-\s](\d{2})$", cleaned)
         if two_digit_match:
             yy = int(two_digit_match.group(1))
             full_year = 2000 + yy if yy < 50 else 1900 + yy

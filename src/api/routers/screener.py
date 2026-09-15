@@ -18,10 +18,14 @@ def run_screener(
     max_de: Optional[float] = Query(None, description="Maximum Debt to Equity ratio"),
     min_fcf: Optional[float] = Query(None, description="Minimum Free Cash Flow (Cr)"),
     sector: Optional[str] = Query(None, description="Filter by broad sector"),
-    min_rev_cagr_5yr: Optional[float] = Query(None, description="Minimum 5-year Revenue CAGR (%)"),
-    min_pat_cagr_5yr: Optional[float] = Query(None, description="Minimum 5-year PAT CAGR (%)"),
+    min_rev_cagr_5yr: Optional[float] = Query(
+        None, description="Minimum 5-year Revenue CAGR (%)"
+    ),
+    min_pat_cagr_5yr: Optional[float] = Query(
+        None, description="Minimum 5-year PAT CAGR (%)"
+    ),
     max_pe: Optional[float] = Query(None, description="Maximum P/E Ratio"),
-    db: sqlite3.Connection = Depends(get_db)
+    db: sqlite3.Connection = Depends(get_db),
 ) -> List[Dict[str, Any]]:
     """
     Screens companies based on multi-metric quantitative filters.
@@ -75,7 +79,7 @@ def run_screener(
     results: List[Dict[str, Any]] = []
     for row in rows:
         r = dict(row)
-        
+
         # Apply numerical filter thresholds
         if min_roe is not None:
             val = r.get("return_on_equity_pct")

@@ -3,8 +3,7 @@ Unit tests for ETL validator module (DataQualityValidator and DQ rules DQ-01 to 
 """
 
 import pandas as pd
-import pytest
-from src.etl.validator import DataQualityValidator, validate_data
+from src.etl.validator import DataQualityValidator
 
 
 def test_validator_dq01_ticker_format():
@@ -54,12 +53,14 @@ def test_validator_dq06_duplicate_year_per_company():
 
 def test_validator_dq09_balance_sheet_equation():
     validator = DataQualityValidator()
-    df = pd.DataFrame({
-        "company_id": ["RELIANCE", "TCS"],
-        "year": [2023, 2023],
-        "total_assets": [1000, 2000],
-        "total_liabilities": [1000, 1500]  # TCS mismatch
-    })
+    df = pd.DataFrame(
+        {
+            "company_id": ["RELIANCE", "TCS"],
+            "year": [2023, 2023],
+            "total_assets": [1000, 2000],
+            "total_liabilities": [1000, 1500],  # TCS mismatch
+        }
+    )
     fails = validator.check_dq09_balance_sheet_equation(df, "balancesheet")
     assert fails == 1
     assert validator.failures[0].rule_id == "DQ-09"
@@ -67,11 +68,9 @@ def test_validator_dq09_balance_sheet_equation():
 
 def test_validator_dq10_sales_non_negative():
     validator = DataQualityValidator()
-    df = pd.DataFrame({
-        "company_id": ["RELIANCE", "TCS"],
-        "year": [2023, 2023],
-        "sales": [5000, -100]
-    })
+    df = pd.DataFrame(
+        {"company_id": ["RELIANCE", "TCS"], "year": [2023, 2023], "sales": [5000, -100]}
+    )
     fails = validator.check_dq10_sales_non_negative(df, "profitandloss")
     assert fails == 1
     assert validator.failures[0].rule_id == "DQ-10"
@@ -80,7 +79,13 @@ def test_validator_dq10_sales_non_negative():
 def test_validator_full_pipeline_run():
     data_dict = {
         "companies": pd.DataFrame({"company_id": ["RELIANCE", "TCS"]}),
-        "profitandloss": pd.DataFrame({"company_id": ["RELIANCE", "TCS"], "year": [2023, 2023], "sales": [1000, 2000]}),
+        "profitandloss": pd.DataFrame(
+            {
+                "company_id": ["RELIANCE", "TCS"],
+                "year": [2023, 2023],
+                "sales": [1000, 2000],
+            }
+        ),
     }
     validator = DataQualityValidator()
     results = validator.validate_tables(data_dict)

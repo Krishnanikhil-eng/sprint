@@ -7,13 +7,14 @@ classifies 8-pattern Capital Allocation profiles, and runs full Cash Flow Intell
 import os
 import sqlite3
 import pandas as pd
-import numpy as np
-from typing import Optional, Tuple, Dict, List, Any
+from typing import Optional, Tuple, List
 
-from src.analytics.cagr import calculate_cagr, calculate_series_cagr
+from src.analytics.cagr import calculate_series_cagr
 
 
-def calculate_free_cash_flow(operating_activity: Optional[float], investing_activity: Optional[float]) -> Optional[float]:
+def calculate_free_cash_flow(
+    operating_activity: Optional[float], investing_activity: Optional[float]
+) -> Optional[float]:
     """
     Free Cash Flow = operating_activity + investing_activity
     Note: Investing activity is typically negative (outflow for capex), so addition computes FCF.
@@ -24,7 +25,9 @@ def calculate_free_cash_flow(operating_activity: Optional[float], investing_acti
     return round(operating_activity + investing_activity, 4)
 
 
-def calculate_cfo_quality_score(cfo_list: List[float], pat_list: List[float]) -> Tuple[Optional[float], Optional[str]]:
+def calculate_cfo_quality_score(
+    cfo_list: List[float], pat_list: List[float]
+) -> Tuple[Optional[float], Optional[str]]:
     """
     CFO Quality Score = average(CFO / PAT) over 5 years.
     Classifications:
@@ -34,15 +37,15 @@ def calculate_cfo_quality_score(cfo_list: List[float], pat_list: List[float]) ->
     """
     if not cfo_list or not pat_list or len(cfo_list) != len(pat_list):
         return None, None
-    
+
     ratios = []
     for cfo, pat in zip(cfo_list, pat_list):
         if pat is not None and pat != 0 and cfo is not None:
             ratios.append(cfo / pat)
-            
+
     if not ratios:
         return None, None
-        
+
     avg_score = round(sum(ratios) / len(ratios), 4)
     if avg_score > 1.0:
         label = "High Quality"
@@ -50,11 +53,13 @@ def calculate_cfo_quality_score(cfo_list: List[float], pat_list: List[float]) ->
         label = "Moderate"
     else:
         label = "Accrual Risk"
-        
+
     return avg_score, label
 
 
-def calculate_capex_intensity(investing_activity: Optional[float], sales: Optional[float]) -> Tuple[Optional[float], Optional[str]]:
+def calculate_capex_intensity(
+    investing_activity: Optional[float], sales: Optional[float]
+) -> Tuple[Optional[float], Optional[str]]:
     """
     CapEx Intensity = abs(investing_activity) / sales * 100
     Classifications:
@@ -64,7 +69,7 @@ def calculate_capex_intensity(investing_activity: Optional[float], sales: Option
     """
     if investing_activity is None or sales is None or sales <= 0:
         return None, None
-        
+
     intensity = round((abs(investing_activity) / sales) * 100, 4)
     if intensity < 3.0:
         label = "Asset Light"
@@ -72,11 +77,13 @@ def calculate_capex_intensity(investing_activity: Optional[float], sales: Option
         label = "Moderate"
     else:
         label = "Capital Intensive"
-        
+
     return intensity, label
 
 
-def calculate_fcf_conversion(fcf: Optional[float], operating_profit: Optional[float]) -> Optional[float]:
+def calculate_fcf_conversion(
+    fcf: Optional[float], operating_profit: Optional[float]
+) -> Optional[float]:
     """
     FCF Conversion Rate = FCF / operating_profit * 100
     Rule: operating_profit == 0 or None -> None
@@ -90,7 +97,7 @@ def classify_capital_allocation(
     cfo: Optional[float],
     cfi: Optional[float],
     cff: Optional[float],
-    cfo_pat_ratio: Optional[float] = None
+    cfo_pat_ratio: Optional[float] = None,
 ) -> Tuple[str, str, str, str]:
     """
     Classifies 8-pattern Capital Allocation based on signs (+/-) of (CFO, CFI, CFF):
@@ -105,13 +112,13 @@ def classify_capital_allocation(
     """
     if cfo is None or cfi is None or cff is None:
         return "?", "?", "?", "Unknown"
-        
+
     cfo_sign = "+" if cfo >= 0 else "-"
     cfi_sign = "+" if cfi >= 0 else "-"
     cff_sign = "+" if cff >= 0 else "-"
-    
+
     pattern = (cfo_sign, cfi_sign, cff_sign)
-    
+
     if pattern == ("+", "-", "-"):
         if cfo_pat_ratio is not None and cfo_pat_ratio > 1.0:
             label = "Shareholder Returns"
@@ -131,14 +138,14 @@ def classify_capital_allocation(
         label = "Mixed"
     else:
         label = "Distress Signal" if cfo < 0 else "Mixed"
-        
+
     return cfo_sign, cfi_sign, cff_sign, label
 
 
 def run_cashflow_intelligence(
     db_path: str = "nifty100.db",
     output_excel: str = "output/cashflow_intelligence.xlsx",
-    alerts_csv: str = "output/distress_alerts.csv"
+    alerts_csv: str = "output/distress_alerts.csv",
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
     Runs complete Cash Flow Intelligence analysis across all 92 companies (Day 31).
@@ -146,42 +153,54 @@ def run_cashflow_intelligence(
     """
     conn = sqlite3.connect(db_path)
 
-    df_comp = pd.read_sql_query("SELECT company_id FROM companies ORDER BY company_id", conn)
+    df_comp = pd.read_sql_query(
+        "SELECT company_id FROM companies ORDER BY company_id", conn
+    )
     df_sec = pd.read_sql_query("SELECT company_id, broad_sector FROM sectors", conn)
-    df_pnl = pd.read_sql_query("SELECT company_id, year, sales, net_profit, operating_profit FROM profitandloss ORDER BY year ASC", conn)
-    df_bs = pd.read_sql_query("SELECT company_id, year, borrowings FROM balancesheet ORDER BY year ASC", conn)
-    df_cf = pd.read_sql_query("SELECT company_id, year, operating_activity, investing_activity, financing_activity FROM cashflow ORDER BY year ASC", conn)
+    df_pnl = pd.read_sql_query(
+        "SELECT company_id, year, sales, net_profit, operating_profit FROM profitandloss ORDER BY year ASC",
+        conn,
+    )
+    df_bs = pd.read_sql_query(
+        "SELECT company_id, year, borrowings FROM balancesheet ORDER BY year ASC", conn
+    )
+    df_cf = pd.read_sql_query(
+        "SELECT company_id, year, operating_activity, investing_activity, financing_activity FROM cashflow ORDER BY year ASC",
+        conn,
+    )
     conn.close()
 
-    sec_map = dict(zip(df_sec['company_id'], df_sec['broad_sector']))
+    sec_map = dict(zip(df_sec["company_id"], df_sec["broad_sector"]))
 
     records = []
     distress_records = []
 
-    for cid in df_comp['company_id'].unique():
+    for cid in df_comp["company_id"].unique():
         cid = str(cid).strip()
         sector = sec_map.get(cid, "Unknown")
 
-        c_pnl = df_pnl[df_pnl['company_id'] == cid].sort_values('year')
-        c_bs = df_bs[df_bs['company_id'] == cid].sort_values('year')
-        c_cf = df_cf[df_cf['company_id'] == cid].sort_values('year')
+        c_pnl = df_pnl[df_pnl["company_id"] == cid].sort_values("year")
+        c_bs = df_bs[df_bs["company_id"] == cid].sort_values("year")
+        c_cf = df_cf[df_cf["company_id"] == cid].sort_values("year")
 
-        years = sorted(list(set(c_pnl['year']).union(set(c_bs['year'])).union(set(c_cf['year']))))
+        years = sorted(
+            list(set(c_pnl["year"]).union(set(c_bs["year"])).union(set(c_cf["year"])))
+        )
         if not years:
             continue
 
         latest_yr = max(years)
 
         # Lookup dicts
-        sales_ts = dict(zip(c_pnl['year'], c_pnl['sales']))
-        pat_ts = dict(zip(c_pnl['year'], c_pnl['net_profit']))
-        op_profit_ts = dict(zip(c_pnl['year'], c_pnl['operating_profit']))
-        
-        cfo_ts = dict(zip(c_cf['year'], c_cf['operating_activity']))
-        cfi_ts = dict(zip(c_cf['year'], c_cf['investing_activity']))
-        cff_ts = dict(zip(c_cf['year'], c_cf['financing_activity']))
+        sales_ts = dict(zip(c_pnl["year"], c_pnl["sales"]))
+        pat_ts = dict(zip(c_pnl["year"], c_pnl["net_profit"]))
+        op_profit_ts = dict(zip(c_pnl["year"], c_pnl["operating_profit"]))
 
-        borrowings_ts = dict(zip(c_bs['year'], c_bs['borrowings']))
+        cfo_ts = dict(zip(c_cf["year"], c_cf["operating_activity"]))
+        cfi_ts = dict(zip(c_cf["year"], c_cf["investing_activity"]))
+        cff_ts = dict(zip(c_cf["year"], c_cf["financing_activity"]))
+
+        borrowings_ts = dict(zip(c_bs["year"], c_bs["borrowings"]))
 
         # FCF TS
         fcf_ts = {}
@@ -215,14 +234,21 @@ def run_cashflow_intelligence(
         latest_cff = cff_ts.get(latest_yr)
         latest_pat = pat_ts.get(latest_yr)
 
-        distress_flag = bool(latest_cfo is not None and latest_cff is not None and latest_cfo < 0 and latest_cff > 0)
+        distress_flag = bool(
+            latest_cfo is not None
+            and latest_cff is not None
+            and latest_cfo < 0
+            and latest_cff > 0
+        )
         if distress_flag:
-            distress_records.append({
-                "company_id": cid,
-                "cfo_value": latest_cfo,
-                "cff_value": latest_cff,
-                "latest_net_profit": latest_pat
-            })
+            distress_records.append(
+                {
+                    "company_id": cid,
+                    "cfo_value": latest_cfo,
+                    "cff_value": latest_cff,
+                    "latest_net_profit": latest_pat,
+                }
+            )
 
         # 6. Deleveraging Flag (CFF < 0 AND borrowings declining YoY)
         prev_yr = latest_yr - 1
@@ -230,13 +256,22 @@ def run_cashflow_intelligence(
         b_prev = borrowings_ts.get(prev_yr)
 
         deleveraging_flag = bool(
-            latest_cff is not None and latest_cff < 0 and
-            b_curr is not None and b_prev is not None and b_curr < b_prev
+            latest_cff is not None
+            and latest_cff < 0
+            and b_curr is not None
+            and b_prev is not None
+            and b_curr < b_prev
         )
 
         # 7. Capital Allocation Label (Sprint 2 classifier)
-        cfo_pat_r = (latest_cfo / latest_pat) if (latest_cfo is not None and latest_pat is not None and latest_pat != 0) else None
-        _, _, _, cap_alloc_label = classify_capital_allocation(latest_cfo, latest_cfi, latest_cff, cfo_pat_r)
+        cfo_pat_r = (
+            (latest_cfo / latest_pat)
+            if (latest_cfo is not None and latest_pat is not None and latest_pat != 0)
+            else None
+        )
+        _, _, _, cap_alloc_label = classify_capital_allocation(
+            latest_cfo, latest_cfi, latest_cff, cfo_pat_r
+        )
 
         record = {
             "company_id": cid,
@@ -249,23 +284,30 @@ def run_cashflow_intelligence(
             "fcf_conversion_pct": fcf_conv,
             "distress_flag": distress_flag,
             "deleveraging_flag": deleveraging_flag,
-            "capital_allocation_label": cap_alloc_label
+            "capital_allocation_label": cap_alloc_label,
         }
         records.append(record)
 
     df_res = pd.DataFrame(records)
-    df_distress = pd.DataFrame(distress_records, columns=["company_id", "cfo_value", "cff_value", "latest_net_profit"])
+    df_distress = pd.DataFrame(
+        distress_records,
+        columns=["company_id", "cfo_value", "cff_value", "latest_net_profit"],
+    )
 
     os.makedirs(os.path.dirname(output_excel), exist_ok=True)
     df_res.to_excel(output_excel, index=False)
     df_distress.to_csv(alerts_csv, index=False)
 
-    print(f"=== Cash Flow Intelligence Summary ===")
+    print("=== Cash Flow Intelligence Summary ===")
     print(f"Total Rows: {len(df_res)} (Expected: 92)")
     print(f"Distress Alerts: {len(df_distress)}")
     print(f"Deleveraging Count: {df_res['deleveraging_flag'].sum()}")
-    print(f"CFO Quality Distribution:\n{df_res['cfo_quality_label'].value_counts().to_dict()}")
-    print(f"CapEx Label Distribution:\n{df_res['capex_label'].value_counts().to_dict()}")
+    print(
+        f"CFO Quality Distribution:\n{df_res['cfo_quality_label'].value_counts().to_dict()}"
+    )
+    print(
+        f"CapEx Label Distribution:\n{df_res['capex_label'].value_counts().to_dict()}"
+    )
     print(f"Saved Excel -> {output_excel}")
     print(f"Saved Alerts CSV -> {alerts_csv}")
 

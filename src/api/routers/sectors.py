@@ -50,8 +50,7 @@ def get_sectors(db: sqlite3.Connection = Depends(get_db)) -> List[Dict[str, Any]
 
 @router.get("/sectors/{sector}/companies")
 def get_sector_companies(
-    sector: str,
-    db: sqlite3.Connection = Depends(get_db)
+    sector: str, db: sqlite3.Connection = Depends(get_db)
 ) -> List[Dict[str, Any]]:
     """
     Returns list of companies belonging to a specific broad sector.
@@ -82,8 +81,7 @@ def get_sector_companies(
 
     if not rows:
         raise HTTPException(
-            status_code=404,
-            detail=f"No sector found matching '{sector}'"
+            status_code=404, detail=f"No sector found matching '{sector}'"
         )
 
     return [dict(row) for row in rows]

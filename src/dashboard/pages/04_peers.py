@@ -7,7 +7,6 @@ import pandas as pd
 import plotly.graph_objects as go
 
 from src.dashboard.utils.db import get_companies, get_sectors, get_peers
-from src.dashboard.config import LABEL_NA
 
 st.header("Peer Comparison")
 
@@ -25,7 +24,7 @@ if companies_df.empty:
 
 # Get unique peer groups (11 broad sectors)
 if not sectors_df.empty:
-    peer_groups = sorted(sectors_df['broad_sector'].dropna().unique().tolist())
+    peer_groups = sorted(sectors_df["broad_sector"].dropna().unique().tolist())
 else:
     peer_groups = []
 
@@ -33,7 +32,7 @@ else:
 selected_group = st.selectbox(
     "Select Peer Group",
     options=peer_groups,
-    help="Select a sector/peer group for comparison"
+    help="Select a sector/peer group for comparison",
 )
 
 if not selected_group:
@@ -54,148 +53,165 @@ if peer_data.empty:
 st.info(f"Found {len(peer_data)} companies in {selected_group} peer group")
 
 # Select benchmark company
-company_options = ["Select a company..."] + sorted(peer_data['company_name'].tolist())
+company_options = ["Select a company..."] + sorted(peer_data["company_name"].tolist())
 selected_company = st.selectbox(
     "Select Benchmark Company",
     options=company_options,
     index=0,
-    help="Select a company to compare against peer group average"
+    help="Select a company to compare against peer group average",
 )
+
 
 # Prepare peer comparison data
 def prepare_peer_data(peer_df, selected_company_name):
     """Prepare data for peer comparison with benchmark handling."""
     if peer_df.empty:
         return None, None, None
-    
+
     # Get benchmark company data
     if selected_company_name and selected_company_name != "Select a company...":
-        benchmark = peer_df[peer_df['company_name'] == selected_company_name]
+        benchmark = peer_df[peer_df["company_name"] == selected_company_name]
         if benchmark.empty:
             return None, None, None
         benchmark_data = benchmark.iloc[0]
     else:
         # Use first company as default benchmark
         benchmark_data = peer_df.iloc[0]
-    
+
     # Calculate peer group averages (excluding benchmark)
-    peers_excluding_benchmark = peer_df[peer_df['company_name'] != benchmark_data['company_name']]
-    
+    peers_excluding_benchmark = peer_df[
+        peer_df["company_name"] != benchmark_data["company_name"]
+    ]
+
     if peers_excluding_benchmark.empty:
         peer_avg = benchmark_data
     else:
         peer_avg = peers_excluding_benchmark.mean(numeric_only=True)
-    
+
     # Select key metrics for comparison
     key_metrics = [
-        'return_on_equity_pct',
-        'roce_pct',
-        'debt_to_equity',
-        'net_profit_margin_pct',
-        'operating_profit_margin_pct',
-        'asset_turnover',
-        'free_cash_flow_cr',
-        'revenue_cagr_5yr'
+        "return_on_equity_pct",
+        "roce_pct",
+        "debt_to_equity",
+        "net_profit_margin_pct",
+        "operating_profit_margin_pct",
+        "asset_turnover",
+        "free_cash_flow_cr",
+        "revenue_cagr_5yr",
     ]
-    
+
     # Get benchmark values
     benchmark_values = {}
     for metric in key_metrics:
         val = benchmark_data.get(metric)
         benchmark_values[metric] = val if pd.notna(val) else 0
-    
+
     # Get peer average values
     peer_avg_values = {}
     for metric in key_metrics:
         val = peer_avg.get(metric)
         peer_avg_values[metric] = val if pd.notna(val) else 0
-    
+
     return benchmark_data, peer_avg_values, benchmark_values
 
-benchmark_data, peer_avg_values, benchmark_values = prepare_peer_data(peer_data, selected_company)
+
+benchmark_data, peer_avg_values, benchmark_values = prepare_peer_data(
+    peer_data, selected_company
+)
 
 # Radar chart comparison
 if benchmark_data is not None and peer_avg_values is not None:
     st.subheader("Radar Chart Comparison")
-    
+
     metric_labels = [
-        'ROE', 'ROCE', 'D/E', 'NPM', 
-        'OPM', 'Asset Turnover', 'FCF (norm)', 'Rev CAGR'
+        "ROE",
+        "ROCE",
+        "D/E",
+        "NPM",
+        "OPM",
+        "Asset Turnover",
+        "FCF (norm)",
+        "Rev CAGR",
     ]
-    
+
     def normalize_for_radar(value, metric_name):
         """Normalize metric values for radar chart display safely."""
         try:
             val = float(value) if pd.notna(value) else 0.0
         except (ValueError, TypeError):
             val = 0.0
-            
-        if metric_name == 'D/E':
+
+        if metric_name == "D/E":
             # Lower is better for D/E
             return max(0.0, float(100.0 - min(val * 20.0, 100.0)))
-        elif metric_name == 'FCF (norm)':
+        elif metric_name == "FCF (norm)":
             # Scale FCF for 0-100 radar axis
             return max(0.0, float(min(val / 50.0, 100.0)))
         else:
             return max(0.0, float(min(val, 100.0)))
-    
+
     benchmark_radar = [
-        normalize_for_radar(benchmark_values.get('return_on_equity_pct', 0), 'ROE'),
-        normalize_for_radar(benchmark_values.get('roce_pct', 0), 'ROCE'),
-        normalize_for_radar(benchmark_values.get('debt_to_equity', 0), 'D/E'),
-        normalize_for_radar(benchmark_values.get('net_profit_margin_pct', 0), 'NPM'),
-        normalize_for_radar(benchmark_values.get('operating_profit_margin_pct', 0), 'OPM'),
-        normalize_for_radar(benchmark_values.get('asset_turnover', 0), 'Asset Turnover'),
-        normalize_for_radar(benchmark_values.get('free_cash_flow_cr', 0), 'FCF (norm)'),
-        normalize_for_radar(benchmark_values.get('revenue_cagr_5yr', 0), 'Rev CAGR')
+        normalize_for_radar(benchmark_values.get("return_on_equity_pct", 0), "ROE"),
+        normalize_for_radar(benchmark_values.get("roce_pct", 0), "ROCE"),
+        normalize_for_radar(benchmark_values.get("debt_to_equity", 0), "D/E"),
+        normalize_for_radar(benchmark_values.get("net_profit_margin_pct", 0), "NPM"),
+        normalize_for_radar(
+            benchmark_values.get("operating_profit_margin_pct", 0), "OPM"
+        ),
+        normalize_for_radar(
+            benchmark_values.get("asset_turnover", 0), "Asset Turnover"
+        ),
+        normalize_for_radar(benchmark_values.get("free_cash_flow_cr", 0), "FCF (norm)"),
+        normalize_for_radar(benchmark_values.get("revenue_cagr_5yr", 0), "Rev CAGR"),
     ]
-    
+
     peer_avg_radar = [
-        normalize_for_radar(peer_avg_values.get('return_on_equity_pct', 0), 'ROE'),
-        normalize_for_radar(peer_avg_values.get('roce_pct', 0), 'ROCE'),
-        normalize_for_radar(peer_avg_values.get('debt_to_equity', 0), 'D/E'),
-        normalize_for_radar(peer_avg_values.get('net_profit_margin_pct', 0), 'NPM'),
-        normalize_for_radar(peer_avg_values.get('operating_profit_margin_pct', 0), 'OPM'),
-        normalize_for_radar(peer_avg_values.get('asset_turnover', 0), 'Asset Turnover'),
-        normalize_for_radar(peer_avg_values.get('free_cash_flow_cr', 0), 'FCF (norm)'),
-        normalize_for_radar(peer_avg_values.get('revenue_cagr_5yr', 0), 'Rev CAGR')
+        normalize_for_radar(peer_avg_values.get("return_on_equity_pct", 0), "ROE"),
+        normalize_for_radar(peer_avg_values.get("roce_pct", 0), "ROCE"),
+        normalize_for_radar(peer_avg_values.get("debt_to_equity", 0), "D/E"),
+        normalize_for_radar(peer_avg_values.get("net_profit_margin_pct", 0), "NPM"),
+        normalize_for_radar(
+            peer_avg_values.get("operating_profit_margin_pct", 0), "OPM"
+        ),
+        normalize_for_radar(peer_avg_values.get("asset_turnover", 0), "Asset Turnover"),
+        normalize_for_radar(peer_avg_values.get("free_cash_flow_cr", 0), "FCF (norm)"),
+        normalize_for_radar(peer_avg_values.get("revenue_cagr_5yr", 0), "Rev CAGR"),
     ]
-    
+
     # Close polygon for radar chart
     benchmark_radar.append(benchmark_radar[0])
     peer_avg_radar.append(peer_avg_radar[0])
     radar_labels = metric_labels + [metric_labels[0]]
-    
+
     fig = go.Figure()
-    
-    fig.add_trace(go.Scatterpolar(
-        r=benchmark_radar,
-        theta=radar_labels,
-        fill='toself',
-        name=f"Selected: {benchmark_data['company_name']}",
-        line_color='#1f77b4'
-    ))
-    
-    fig.add_trace(go.Scatterpolar(
-        r=peer_avg_radar,
-        theta=radar_labels,
-        fill='toself',
-        name=f'{selected_group} Average',
-        line_color='#ff7f0e'
-    ))
-    
+
+    fig.add_trace(
+        go.Scatterpolar(
+            r=benchmark_radar,
+            theta=radar_labels,
+            fill="toself",
+            name=f"Selected: {benchmark_data['company_name']}",
+            line_color="#1f77b4",
+        )
+    )
+
+    fig.add_trace(
+        go.Scatterpolar(
+            r=peer_avg_radar,
+            theta=radar_labels,
+            fill="toself",
+            name=f"{selected_group} Average",
+            line_color="#ff7f0e",
+        )
+    )
+
     fig.update_layout(
-        polar=dict(
-            radialaxis=dict(
-                visible=True,
-                range=[0, 100]
-            )
-        ),
+        polar=dict(radialaxis=dict(visible=True, range=[0, 100])),
         showlegend=True,
         height=500,
-        margin=dict(l=20, r=20, t=40, b=20)
+        margin=dict(l=20, r=20, t=40, b=20),
     )
-    
+
     st.plotly_chart(fig, use_container_width=True)
 
 # KPI comparison table
@@ -203,52 +219,55 @@ st.subheader("KPI Comparison Table")
 
 if not peer_data.empty:
     table_cols = [
-        'company_name',
-        'return_on_equity_pct',
-        'roce_pct',
-        'debt_to_equity',
-        'net_profit_margin_pct',
-        'operating_profit_margin_pct',
-        'asset_turnover',
-        'free_cash_flow_cr',
-        'revenue_cagr_5yr'
+        "company_name",
+        "return_on_equity_pct",
+        "roce_pct",
+        "debt_to_equity",
+        "net_profit_margin_pct",
+        "operating_profit_margin_pct",
+        "asset_turnover",
+        "free_cash_flow_cr",
+        "revenue_cagr_5yr",
     ]
-    
+
     available_table_cols = [col for col in table_cols if col in peer_data.columns]
     comparison_df = peer_data[available_table_cols].copy()
-    
+
     # Format values
     for col in available_table_cols:
-        if col != 'company_name':
-            comparison_df[col] = pd.to_numeric(comparison_df[col], errors='coerce').round(2)
-    
+        if col != "company_name":
+            comparison_df[col] = pd.to_numeric(
+                comparison_df[col], errors="coerce"
+            ).round(2)
+
     # Highlight benchmark row
     if benchmark_data is not None:
-        benchmark_name = benchmark_data['company_name']
-        comparison_df['Benchmark'] = comparison_df['company_name'].apply(
+        benchmark_name = benchmark_data["company_name"]
+        comparison_df["Benchmark"] = comparison_df["company_name"].apply(
             lambda x: "⭐ Selected" if x == benchmark_name else ""
         )
-    
+
     # Rename columns
     col_rename = {
-        'company_name': 'Company Name',
-        'return_on_equity_pct': 'ROE (%)',
-        'roce_pct': 'ROCE (%)',
-        'debt_to_equity': 'D/E',
-        'net_profit_margin_pct': 'NPM (%)',
-        'operating_profit_margin_pct': 'OPM (%)',
-        'asset_turnover': 'Asset Turnover',
-        'free_cash_flow_cr': 'FCF (Cr)',
-        'revenue_cagr_5yr': 'Rev CAGR (%)'
+        "company_name": "Company Name",
+        "return_on_equity_pct": "ROE (%)",
+        "roce_pct": "ROCE (%)",
+        "debt_to_equity": "D/E",
+        "net_profit_margin_pct": "NPM (%)",
+        "operating_profit_margin_pct": "OPM (%)",
+        "asset_turnover": "Asset Turnover",
+        "free_cash_flow_cr": "FCF (Cr)",
+        "revenue_cagr_5yr": "Rev CAGR (%)",
     }
     comparison_df = comparison_df.rename(columns=col_rename)
-    
+
     # Put Benchmark column first
-    if 'Benchmark' in comparison_df.columns:
-        cols_order = ['Benchmark'] + [c for c in comparison_df.columns if c != 'Benchmark']
+    if "Benchmark" in comparison_df.columns:
+        cols_order = ["Benchmark"] + [
+            c for c in comparison_df.columns if c != "Benchmark"
+        ]
         comparison_df = comparison_df[cols_order]
-    
+
     st.dataframe(comparison_df.fillna("N/A"), use_container_width=True, height=450)
 else:
     st.warning("No peer data available for comparison")
-

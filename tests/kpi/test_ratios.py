@@ -4,7 +4,6 @@ Validates 20 distinct ratio calculation edge cases including zero division, nega
 financial sector exemptions, and CAGR edge cases.
 """
 
-import pytest
 from src.analytics.ratios import (
     calculate_net_profit_margin,
     calculate_operating_profit_margin,
@@ -13,7 +12,7 @@ from src.analytics.ratios import (
     calculate_debt_to_equity,
     calculate_interest_coverage,
     calculate_asset_turnover,
-    cross_check_opm
+    cross_check_opm,
 )
 from src.analytics.cagr import calculate_cagr
 
@@ -111,4 +110,3 @@ def test_cagr_negative_start_value():
     cagr, flag = calculate_cagr(-100, 200, 5)
     assert cagr is None
     assert flag == "TURNAROUND"
-

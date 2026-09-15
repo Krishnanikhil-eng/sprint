@@ -5,7 +5,6 @@ Provides SQLite connection helpers reusing the canonical nifty100.db database.
 
 import sqlite3
 from typing import Generator
-from pathlib import Path
 
 DB_PATH_DEFAULT = "nifty100.db"
 

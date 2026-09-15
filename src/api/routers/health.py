@@ -26,7 +26,7 @@ PROJECT_TABLES = [
     "peer_groups",
     "financial_ratios",
     "stock_prices",
-    "market_cap"
+    "market_cap",
 ]
 
 
@@ -46,7 +46,9 @@ def get_health_status(db: sqlite3.Connection = Depends(get_db)) -> Dict[str, Any
             except sqlite3.Error:
                 db_counts[table] = 0
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Database connection error: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Database connection error: {str(e)}"
+        )
 
     uptime = round(time.time() - START_TIME, 2)
 
@@ -54,5 +56,5 @@ def get_health_status(db: sqlite3.Connection = Depends(get_db)) -> Dict[str, Any
         "status": "ok",
         "version": "1.0.0",
         "uptime_seconds": uptime,
-        "db_row_counts": db_counts
+        "db_row_counts": db_counts,
     }

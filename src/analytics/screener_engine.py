@@ -6,16 +6,21 @@ Nifty 100 stock ratios stored in the SQLite database.
 
 import sqlite3
 import logging
-from typing import Optional, Dict, Any, List
+from typing import Optional
 import pandas as pd
 
-from src.analytics.screener_config import ScreenerConfig, FilterCriterion, FilterOperator
+from src.analytics.screener_config import (
+    ScreenerConfig,
+    FilterCriterion,
+    FilterOperator,
+)
 
 logger = logging.getLogger(__name__)
 
+
 class ScreenerEngine:
     """Core execution engine for stock screening operations."""
-    
+
     def __init__(self, db_path: str = "nifty100.db"):
         self.db_path = db_path
         self.raw_data: Optional[pd.DataFrame] = None
@@ -25,14 +30,15 @@ class ScreenerEngine:
     def set_config(self, config: ScreenerConfig) -> None:
         """Sets the active screening configuration."""
         self.config = config
-        logger.info(f"Loaded active config: '{config.name}' with {len(config.criteria)} criteria.")
+        logger.info(
+            f"Loaded active config: '{config.name}' with {len(config.criteria)} criteria."
+        )
 
     def load_config_from_json(self, json_path: str) -> ScreenerConfig:
         """Loads and sets configuration from a JSON file path."""
         config = ScreenerConfig.from_json(json_path)
         self.set_config(config)
         return config
-
 
     def get_connection(self) -> sqlite3.Connection:
         return sqlite3.connect(self.db_path)
@@ -97,15 +103,28 @@ class ScreenerEngine:
     def _matches_criterion(self, row: pd.Series, criterion: FilterCriterion) -> bool:
         """Evaluates whether a row matches a specific filter criterion with sector awareness."""
         # Financials sector D/E exemption handling
-        if criterion.metric_name == "debt_to_equity" and self.config and self.config.handle_financials_de:
+        if (
+            criterion.metric_name == "debt_to_equity"
+            and self.config
+            and self.config.handle_financials_de
+        ):
             sector = str(row.get("broad_sector", "")).upper()
             sub_sector = str(row.get("sub_sector", "")).upper()
-            if "FINANCIAL" in sector or "BANK" in sector or "FINANCIAL" in sub_sector or "BANK" in sub_sector:
+            if (
+                "FINANCIAL" in sector
+                or "BANK" in sector
+                or "FINANCIAL" in sub_sector
+                or "BANK" in sub_sector
+            ):
                 # Exclude Financials from strict D/E threshold check unless specified otherwise
                 return True
 
         # Debt-Free ICR handling
-        if criterion.metric_name == "interest_coverage" and self.config and self.config.handle_zero_debt_icr:
+        if (
+            criterion.metric_name == "interest_coverage"
+            and self.config
+            and self.config.handle_zero_debt_icr
+        ):
             icr_label = str(row.get("icr_label", "")).upper()
             total_debt = row.get("total_debt_cr")
             if icr_label == "DEBT_FREE" or total_debt == 0 or total_debt == 0.0:
@@ -114,8 +133,6 @@ class ScreenerEngine:
 
         val = row.get(criterion.metric_name)
         return criterion.evaluate(val)
-
-
 
     def apply_filters(self, df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
         """
@@ -134,19 +151,25 @@ class ScreenerEngine:
 
         mask = pd.Series(True, index=df.index)
         for criterion in self.config.criteria:
-            crit_mask = df.apply(lambda row: self._matches_criterion(row, criterion), axis=1)
+            crit_mask = df.apply(
+                lambda row: self._matches_criterion(row, criterion), axis=1
+            )
             mask = mask & crit_mask
 
         filtered = df[mask].copy()
         self.filtered_data = filtered
-        logger.info(f"Applied {len(self.config.criteria)} criteria: {len(filtered)} / {len(df)} companies passed.")
+        logger.info(
+            f"Applied {len(self.config.criteria)} criteria: {len(filtered)} / {len(df)} companies passed."
+        )
         return filtered
 
-    def filter_by_core_ratios(self,
-                              min_roe: Optional[float] = None,
-                              max_de: Optional[float] = None,
-                              min_fcf: Optional[float] = None,
-                              df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
+    def filter_by_core_ratios(
+        self,
+        min_roe: Optional[float] = None,
+        max_de: Optional[float] = None,
+        min_fcf: Optional[float] = None,
+        df: Optional[pd.DataFrame] = None,
+    ) -> pd.DataFrame:
         """
         Convenience method to quickly filter companies by core pillar metrics:
         Return on Equity (%), Debt to Equity, and Free Cash Flow (Cr).
@@ -158,26 +181,53 @@ class ScreenerEngine:
 
         criteria = []
         if min_roe is not None:
-            criteria.append(FilterCriterion("return_on_equity_pct", FilterOperator.GREATER_EQUAL, value=min_roe, description=f"ROE >= {min_roe}%"))
+            criteria.append(
+                FilterCriterion(
+                    "return_on_equity_pct",
+                    FilterOperator.GREATER_EQUAL,
+                    value=min_roe,
+                    description=f"ROE >= {min_roe}%",
+                )
+            )
         if max_de is not None:
-            criteria.append(FilterCriterion("debt_to_equity", FilterOperator.LESS_EQUAL, value=max_de, description=f"D/E <= {max_de}"))
+            criteria.append(
+                FilterCriterion(
+                    "debt_to_equity",
+                    FilterOperator.LESS_EQUAL,
+                    value=max_de,
+                    description=f"D/E <= {max_de}",
+                )
+            )
         if min_fcf is not None:
-            criteria.append(FilterCriterion("free_cash_flow_cr", FilterOperator.GREATER_EQUAL, value=min_fcf, description=f"FCF >= {min_fcf} Cr"))
+            criteria.append(
+                FilterCriterion(
+                    "free_cash_flow_cr",
+                    FilterOperator.GREATER_EQUAL,
+                    value=min_fcf,
+                    description=f"FCF >= {min_fcf} Cr",
+                )
+            )
 
-        config = ScreenerConfig(name="Core Ratios Quick Filter", description="Filtering by ROE, D/E, and FCF", criteria=criteria)
+        config = ScreenerConfig(
+            name="Core Ratios Quick Filter",
+            description="Filtering by ROE, D/E, and FCF",
+            criteria=criteria,
+        )
         self.set_config(config)
         return self.apply_filters(df)
 
-    def filter_by_multi_metrics(self,
-                                min_npm: Optional[float] = None,
-                                min_opm: Optional[float] = None,
-                                min_roce: Optional[float] = None,
-                                min_roa: Optional[float] = None,
-                                min_asset_turnover: Optional[float] = None,
-                                min_rev_cagr: Optional[float] = None,
-                                min_pat_cagr: Optional[float] = None,
-                                min_dividend_payout: Optional[float] = None,
-                                df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
+    def filter_by_multi_metrics(
+        self,
+        min_npm: Optional[float] = None,
+        min_opm: Optional[float] = None,
+        min_roce: Optional[float] = None,
+        min_roa: Optional[float] = None,
+        min_asset_turnover: Optional[float] = None,
+        min_rev_cagr: Optional[float] = None,
+        min_pat_cagr: Optional[float] = None,
+        min_dividend_payout: Optional[float] = None,
+        df: Optional[pd.DataFrame] = None,
+    ) -> pd.DataFrame:
         """
         Filters data across profitability margins, capital efficiency, turnover, and growth CAGRs.
         """
@@ -188,23 +238,63 @@ class ScreenerEngine:
 
         criteria = []
         if min_npm is not None:
-            criteria.append(FilterCriterion("net_profit_margin_pct", FilterOperator.GREATER_EQUAL, value=min_npm))
+            criteria.append(
+                FilterCriterion(
+                    "net_profit_margin_pct", FilterOperator.GREATER_EQUAL, value=min_npm
+                )
+            )
         if min_opm is not None:
-            criteria.append(FilterCriterion("operating_profit_margin_pct", FilterOperator.GREATER_EQUAL, value=min_opm))
+            criteria.append(
+                FilterCriterion(
+                    "operating_profit_margin_pct",
+                    FilterOperator.GREATER_EQUAL,
+                    value=min_opm,
+                )
+            )
         if min_roce is not None:
-            criteria.append(FilterCriterion("roce_pct", FilterOperator.GREATER_EQUAL, value=min_roce))
+            criteria.append(
+                FilterCriterion(
+                    "roce_pct", FilterOperator.GREATER_EQUAL, value=min_roce
+                )
+            )
         if min_roa is not None:
-            criteria.append(FilterCriterion("roa_pct", FilterOperator.GREATER_EQUAL, value=min_roa))
+            criteria.append(
+                FilterCriterion("roa_pct", FilterOperator.GREATER_EQUAL, value=min_roa)
+            )
         if min_asset_turnover is not None:
-            criteria.append(FilterCriterion("asset_turnover", FilterOperator.GREATER_EQUAL, value=min_asset_turnover))
+            criteria.append(
+                FilterCriterion(
+                    "asset_turnover",
+                    FilterOperator.GREATER_EQUAL,
+                    value=min_asset_turnover,
+                )
+            )
         if min_rev_cagr is not None:
-            criteria.append(FilterCriterion("revenue_cagr_5yr", FilterOperator.GREATER_EQUAL, value=min_rev_cagr))
+            criteria.append(
+                FilterCriterion(
+                    "revenue_cagr_5yr", FilterOperator.GREATER_EQUAL, value=min_rev_cagr
+                )
+            )
         if min_pat_cagr is not None:
-            criteria.append(FilterCriterion("pat_cagr_5yr", FilterOperator.GREATER_EQUAL, value=min_pat_cagr))
+            criteria.append(
+                FilterCriterion(
+                    "pat_cagr_5yr", FilterOperator.GREATER_EQUAL, value=min_pat_cagr
+                )
+            )
         if min_dividend_payout is not None:
-            criteria.append(FilterCriterion("dividend_payout_ratio_pct", FilterOperator.GREATER_EQUAL, value=min_dividend_payout))
+            criteria.append(
+                FilterCriterion(
+                    "dividend_payout_ratio_pct",
+                    FilterOperator.GREATER_EQUAL,
+                    value=min_dividend_payout,
+                )
+            )
 
-        config = ScreenerConfig(name="Multi-Metric Advanced Filter", description="Filtering margins, return ratios, turnover, and CAGRs", criteria=criteria)
+        config = ScreenerConfig(
+            name="Multi-Metric Advanced Filter",
+            description="Filtering margins, return ratios, turnover, and CAGRs",
+            criteria=criteria,
+        )
         self.set_config(config)
         return self.apply_filters(df)
 
@@ -222,15 +312,17 @@ class ScreenerEngine:
         roe = df["return_on_equity_pct"].fillna(0.0).clip(lower=-50, upper=100)
         roce = df["roce_pct"].fillna(0.0).clip(lower=-50, upper=100)
         npm = df["net_profit_margin_pct"].fillna(0.0).clip(lower=-50, upper=100)
-        
+
         rev_cagr = df["revenue_cagr_5yr"].fillna(0.0).clip(lower=-30, upper=100)
         pat_cagr = df["pat_cagr_5yr"].fillna(0.0).clip(lower=-30, upper=100)
-        
+
         fcf = df["free_cash_flow_cr"].fillna(0.0)
-        fcf_score = (fcf > 0).astype(float) * 10.0 + (fcf / 100.0).clip(lower=-10, upper=40)
+        fcf_score = (fcf > 0).astype(float) * 10.0 + (fcf / 100.0).clip(
+            lower=-10, upper=40
+        )
         de = df["debt_to_equity"].fillna(0.0).clip(lower=0, upper=10)
-        de_health = (10.0 - de).clip(lower=0, upper=10) # lower D/E is healthier
-        
+        de_health = (10.0 - de).clip(lower=0, upper=10)  # lower D/E is healthier
+
         asset_turnover = df["asset_turnover"].fillna(0.0).clip(lower=0, upper=5)
 
         # Pillar Scores
@@ -239,7 +331,12 @@ class ScreenerEngine:
         health_pillar = (de_health * 5.0) + (fcf_score * 0.5)
         efficiency_pillar = asset_turnover * 20.0
 
-        raw_score = (quality_pillar * 0.35) + (growth_pillar * 0.25) + (health_pillar * 0.25) + (efficiency_pillar * 0.15)
+        raw_score = (
+            (quality_pillar * 0.35)
+            + (growth_pillar * 0.25)
+            + (health_pillar * 0.25)
+            + (efficiency_pillar * 0.15)
+        )
         df["raw_composite_score"] = raw_score.round(2)
         return df
 
@@ -288,24 +385,26 @@ class ScreenerEngine:
                 g["sector_relative_score"] = 100.0
                 g["sector_rank"] = 1
             else:
-                g["sector_relative_score"] = (g["composite_score"].rank(pct=True) * 100.0).round(2)
-                g["sector_rank"] = g["composite_score"].rank(ascending=False, method="min").astype(int)
+                g["sector_relative_score"] = (
+                    g["composite_score"].rank(pct=True) * 100.0
+                ).round(2)
+                g["sector_rank"] = (
+                    g["composite_score"].rank(ascending=False, method="min").astype(int)
+                )
             return g
 
         if "broad_sector" in df.columns and df["broad_sector"].notnull().any():
             try:
-                df = df.groupby("broad_sector", group_keys=False, include_groups=False).apply(_score_sector)
+                df = df.groupby(
+                    "broad_sector", group_keys=False, include_groups=False
+                ).apply(_score_sector)
             except TypeError:
                 df = df.groupby("broad_sector", group_keys=False).apply(_score_sector)
         else:
 
             df["sector_relative_score"] = df["composite_score"]
-            df["sector_rank"] = df["composite_score"].rank(ascending=False, method="min").astype(int)
+            df["sector_rank"] = (
+                df["composite_score"].rank(ascending=False, method="min").astype(int)
+            )
 
         return df
-
-
-
-
-
-

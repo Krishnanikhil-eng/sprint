@@ -2,15 +2,14 @@
 Unit tests for ETL normaliser module (normalize_year and normalize_ticker).
 """
 
-import math
 import numpy as np
-import pytest
 from src.etl.normaliser import normalize_ticker, normalize_year
 
 
 # ==============================================================================
 # Tests for normalize_year() [22 Tests]
 # ==============================================================================
+
 
 def test_year_integer():
     assert normalize_year(2023) == 2023
@@ -113,6 +112,7 @@ def test_year_complex_type():
 # ==============================================================================
 # Tests for normalize_ticker() [19 Tests]
 # ==============================================================================
+
 
 def test_ticker_uppercase():
     assert normalize_ticker("RELIANCE") == "RELIANCE"

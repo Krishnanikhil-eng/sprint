@@ -3,9 +3,7 @@ Unit tests for database schema and ETL loader pipeline (load_data).
 """
 
 import sqlite3
-from pathlib import Path
 import pandas as pd
-import pytest
 from src.etl.loader import load_data
 
 
@@ -19,7 +17,9 @@ def test_db_schema_initialization(tmp_path):
     cur = conn.cursor()
 
     # Check 12 tables created
-    cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name != 'sqlite_sequence';")
+    cur.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name != 'sqlite_sequence';"
+    )
     tables = [r[0] for r in cur.fetchall()]
     assert len(tables) == 12
 

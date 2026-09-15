@@ -2,12 +2,12 @@
 Unit tests for NLP analysis text parser (Day 29).
 """
 
-import os
 import sqlite3
-import pytest
-import pandas as pd
 
-from src.nlp.parser import parse_metric_text, validate_cagr_against_db, process_analysis_file
+from src.nlp.parser import (
+    parse_metric_text,
+    validate_cagr_against_db,
+)
 
 
 def test_parse_metric_text_normal():
@@ -29,7 +29,7 @@ def test_parse_metric_text_whitespace_variations():
         ("10 Years:21%", 10, 21.0),
         ("10 Years : 21.5%", 10, 21.5),
         (" 3  Years:   12% ", 3, 12.0),
-        ("1 Year: -2%", 1, -2.0)
+        ("1 Year: -2%", 1, -2.0),
     ]
     for text, exp_period, exp_val in cases:
         period, val, err = parse_metric_text(text)
@@ -68,15 +68,15 @@ def test_cagr_divergence_low(tmp_path):
     cur = conn.cursor()
     cur.execute("CREATE TABLE profitandloss (company_id TEXT, year INT, sales REAL)")
     cur.execute("INSERT INTO profitandloss VALUES ('TCS', 2019, 100.0)")
-    cur.execute("INSERT INTO profitandloss VALUES ('TCS', 2024, 200.0)") # CAGR ~14.87%
+    cur.execute("INSERT INTO profitandloss VALUES ('TCS', 2024, 200.0)")  # CAGR ~14.87%
     conn.commit()
 
     res = validate_cagr_against_db(
         company_id="TCS",
         metric_type="compounded_sales_growth",
         period_years=5,
-        parsed_value=15.0, # Divergence ~0.13% <= 5%
-        conn=conn
+        parsed_value=15.0,  # Divergence ~0.13% <= 5%
+        conn=conn,
     )
     conn.close()
 
@@ -90,15 +90,15 @@ def test_cagr_divergence_high(tmp_path):
     cur = conn.cursor()
     cur.execute("CREATE TABLE profitandloss (company_id TEXT, year INT, sales REAL)")
     cur.execute("INSERT INTO profitandloss VALUES ('TCS', 2019, 100.0)")
-    cur.execute("INSERT INTO profitandloss VALUES ('TCS', 2024, 200.0)") # CAGR ~14.87%
+    cur.execute("INSERT INTO profitandloss VALUES ('TCS', 2024, 200.0)")  # CAGR ~14.87%
     conn.commit()
 
     res = validate_cagr_against_db(
         company_id="TCS",
         metric_type="compounded_sales_growth",
         period_years=5,
-        parsed_value=30.0, # Divergence ~15.13% > 5%
-        conn=conn
+        parsed_value=30.0,  # Divergence ~15.13% > 5%
+        conn=conn,
     )
     conn.close()
 

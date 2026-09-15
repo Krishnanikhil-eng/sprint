@@ -4,9 +4,8 @@ Handles schema and data validation prior to transformation, loading, and audit e
 Implements DQ-01 through DQ-16 with severity classification and failure logging.
 """
 
-import os
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Union, Any
+from typing import Dict, List, Optional, Union, Any
 import pandas as pd
 import sqlite3
 
@@ -40,7 +39,9 @@ class DataQualityFailure:
             "company_id": self.company_id or "",
             "year": self.year if self.year is not None else "",
             "field": self.field or "",
-            "actual_value": str(self.actual_value) if self.actual_value is not None else "",
+            "actual_value": (
+                str(self.actual_value) if self.actual_value is not None else ""
+            ),
             "message": self.message,
         }
 
@@ -104,7 +105,11 @@ class DataQualityValidator:
         """DQ-01: Ticker Format & Validation (CRITICAL). Upper, alphanumeric with optional .NS/.BO/-/_."""
         rule_id = "DQ-01"
         fail_count = 0
-        col = "company_id" if "company_id" in df.columns else ("id" if "id" in df.columns and table_name == "companies" else None)
+        col = (
+            "company_id"
+            if "company_id" in df.columns
+            else ("id" if "id" in df.columns and table_name == "companies" else None)
+        )
         if not col:
             return 0
 
@@ -112,7 +117,13 @@ class DataQualityValidator:
             val = row[col]
             if pd.notna(val):
                 s_val = str(val).strip()
-                if not s_val.isupper() or not s_val.replace(".", "").replace("-", "").replace("&", "").isalnum():
+                if (
+                    not s_val.isupper()
+                    or not s_val.replace(".", "")
+                    .replace("-", "")
+                    .replace("&", "")
+                    .isalnum()
+                ):
                     fail_count += 1
                     self.log_failure(
                         rule_id,
@@ -129,7 +140,11 @@ class DataQualityValidator:
         """DQ-02: Missing / Null Ticker Check (CRITICAL)."""
         rule_id = "DQ-02"
         fail_count = 0
-        col = "company_id" if "company_id" in df.columns else ("id" if "id" in df.columns and table_name == "companies" else None)
+        col = (
+            "company_id"
+            if "company_id" in df.columns
+            else ("id" if "id" in df.columns and table_name == "companies" else None)
+        )
         if not col:
             return 0
 
@@ -214,7 +229,13 @@ class DataQualityValidator:
     def check_dq05_missing_year(self, df: pd.DataFrame, table_name: str) -> int:
         """DQ-05: Missing / Null Year Check (CRITICAL). For annual time-series tables."""
         rule_id = "DQ-05"
-        time_series_tables = ["profitandloss", "balancesheet", "cashflow", "financial_ratios", "market_cap"]
+        time_series_tables = [
+            "profitandloss",
+            "balancesheet",
+            "cashflow",
+            "financial_ratios",
+            "market_cap",
+        ]
         if table_name not in time_series_tables or "year" not in df.columns:
             return 0
 
@@ -233,11 +254,23 @@ class DataQualityValidator:
             )
         return fail_count
 
-    def check_dq06_duplicate_year_per_company(self, df: pd.DataFrame, table_name: str) -> int:
+    def check_dq06_duplicate_year_per_company(
+        self, df: pd.DataFrame, table_name: str
+    ) -> int:
         """DQ-06: Duplicate Year per Company Check (CRITICAL)."""
         rule_id = "DQ-06"
-        time_series_tables = ["profitandloss", "balancesheet", "cashflow", "financial_ratios", "market_cap"]
-        if table_name not in time_series_tables or "year" not in df.columns or "company_id" not in df.columns:
+        time_series_tables = [
+            "profitandloss",
+            "balancesheet",
+            "cashflow",
+            "financial_ratios",
+            "market_cap",
+        ]
+        if (
+            table_name not in time_series_tables
+            or "year" not in df.columns
+            or "company_id" not in df.columns
+        ):
             return 0
 
         dups = df[df.duplicated(subset=["company_id", "year"], keep=False)]
@@ -282,7 +315,9 @@ class DataQualityValidator:
                 )
         return fail_count
 
-    def check_dq08_financial_sanity_range(self, df: pd.DataFrame, table_name: str) -> int:
+    def check_dq08_financial_sanity_range(
+        self, df: pd.DataFrame, table_name: str
+    ) -> int:
         """DQ-08: Financial Value Range / Sanity Check (WARNING)."""
         rule_id = "DQ-08"
         fail_count = 0
@@ -304,10 +339,16 @@ class DataQualityValidator:
                 )
         return fail_count
 
-    def check_dq09_balance_sheet_equation(self, df: pd.DataFrame, table_name: str) -> int:
+    def check_dq09_balance_sheet_equation(
+        self, df: pd.DataFrame, table_name: str
+    ) -> int:
         """DQ-09: Balance Sheet Equation (Assets = Liabilities + Equity) (CRITICAL)."""
         rule_id = "DQ-09"
-        if table_name != "balancesheet" or "total_assets" not in df.columns or "total_liabilities" not in df.columns:
+        if (
+            table_name != "balancesheet"
+            or "total_assets" not in df.columns
+            or "total_liabilities" not in df.columns
+        ):
             return 0
 
         fail_count = 0
@@ -358,16 +399,33 @@ class DataQualityValidator:
         rule_id = "DQ-11"
         if table_name != "cashflow":
             return 0
-        cols = ["operating_activity", "investing_activity", "financing_activity", "net_cash_flow"]
+        cols = [
+            "operating_activity",
+            "investing_activity",
+            "financing_activity",
+            "net_cash_flow",
+        ]
         if not all(c in df.columns for c in cols):
             return 0
 
         fail_count = 0
         comp_col = "company_id" if "company_id" in df.columns else "id"
         for idx, row in df.iterrows():
-            op = float(row["operating_activity"]) if pd.notna(row["operating_activity"]) else 0.0
-            inv = float(row["investing_activity"]) if pd.notna(row["investing_activity"]) else 0.0
-            fin = float(row["financing_activity"]) if pd.notna(row["financing_activity"]) else 0.0
+            op = (
+                float(row["operating_activity"])
+                if pd.notna(row["operating_activity"])
+                else 0.0
+            )
+            inv = (
+                float(row["investing_activity"])
+                if pd.notna(row["investing_activity"])
+                else 0.0
+            )
+            fin = (
+                float(row["financing_activity"])
+                if pd.notna(row["financing_activity"])
+                else 0.0
+            )
             net = float(row["net_cash_flow"]) if pd.notna(row["net_cash_flow"]) else 0.0
 
             calc_net = op + inv + fin
@@ -464,7 +522,10 @@ class DataQualityValidator:
     def check_dq15_outlier_detection(self, df: pd.DataFrame, table_name: str) -> int:
         """DQ-15: Outlier / Extreme Value Detection (WARNING)."""
         rule_id = "DQ-15"
-        if table_name not in ["profitandloss", "financial_ratios"] or "sales" not in df.columns:
+        if (
+            table_name not in ["profitandloss", "financial_ratios"]
+            or "sales" not in df.columns
+        ):
             return 0
 
         fail_count = 0
@@ -485,7 +546,7 @@ class DataQualityValidator:
                         year=row.get("year", None),
                         field="sales",
                         actual_value=row["sales"],
-                        message=f"Extreme outlier sales value (>5 std dev from mean)",
+                        message="Extreme outlier sales value (>5 std dev from mean)",
                     )
         return fail_count
 
@@ -582,14 +643,22 @@ class DataQualityValidator:
             rule_counts["DQ-03"] += self.check_dq03_duplicate_company(df, table_name)
             rule_counts["DQ-04"] += self.check_dq04_year_range(df, table_name)
             rule_counts["DQ-05"] += self.check_dq05_missing_year(df, table_name)
-            rule_counts["DQ-06"] += self.check_dq06_duplicate_year_per_company(df, table_name)
+            rule_counts["DQ-06"] += self.check_dq06_duplicate_year_per_company(
+                df, table_name
+            )
             rule_counts["DQ-07"] += self.check_dq07_financial_numeric(df, table_name)
-            rule_counts["DQ-08"] += self.check_dq08_financial_sanity_range(df, table_name)
-            rule_counts["DQ-09"] += self.check_dq09_balance_sheet_equation(df, table_name)
+            rule_counts["DQ-08"] += self.check_dq08_financial_sanity_range(
+                df, table_name
+            )
+            rule_counts["DQ-09"] += self.check_dq09_balance_sheet_equation(
+                df, table_name
+            )
             rule_counts["DQ-10"] += self.check_dq10_sales_non_negative(df, table_name)
             rule_counts["DQ-11"] += self.check_dq11_cashflow_consistency(df, table_name)
             rule_counts["DQ-12"] += self.check_dq12_required_fields(df, table_name)
-            rule_counts["DQ-13"] += self.check_dq13_foreign_key_integrity(df, table_name, valid_companies)
+            rule_counts["DQ-13"] += self.check_dq13_foreign_key_integrity(
+                df, table_name, valid_companies
+            )
             rule_counts["DQ-14"] += self.check_dq14_duplicate_records(df, table_name)
             rule_counts["DQ-15"] += self.check_dq15_outlier_detection(df, table_name)
             rule_counts["DQ-16"] += self.check_dq16_stock_price_sanity(df, table_name)
@@ -617,7 +686,11 @@ class DataQualityValidator:
         for r_id, desc in rule_descriptions.items():
             fail_cnt = rule_counts[r_id]
             sev = rule_severities[r_id]
-            status = "PASS" if fail_cnt == 0 else ("FAIL (CRITICAL)" if sev == "CRITICAL" else "WARNING")
+            status = (
+                "PASS"
+                if fail_cnt == 0
+                else ("FAIL (CRITICAL)" if sev == "CRITICAL" else "WARNING")
+            )
             self.rule_statuses[r_id] = {
                 "rule_id": r_id,
                 "description": desc,
@@ -629,11 +702,15 @@ class DataQualityValidator:
         self.export_failures()
         return self.rule_statuses
 
-    def validate_database(self, db_path: Union[str, Path] = "nifty100.db") -> Dict[str, Dict[str, Any]]:
+    def validate_database(
+        self, db_path: Union[str, Path] = "nifty100.db"
+    ) -> Dict[str, Dict[str, Any]]:
         """Runs validation directly on SQLite database tables."""
         conn = sqlite3.connect(db_path)
         cur = conn.cursor()
-        cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name != 'sqlite_sequence';")
+        cur.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name != 'sqlite_sequence';"
+        )
         tables = [r[0] for r in cur.fetchall()]
 
         data_dict = {}
@@ -644,7 +721,9 @@ class DataQualityValidator:
         return self.validate_tables(data_dict)
 
 
-def validate_data(data_source: Optional[Union[Dict[str, pd.DataFrame], str, Path]] = "nifty100.db"):
+def validate_data(
+    data_source: Optional[Union[Dict[str, pd.DataFrame], str, Path]] = "nifty100.db"
+):
     """
     Main entry point function for data validation.
     Accepts either a dict of dataframes or path to SQLite database.

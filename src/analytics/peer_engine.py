@@ -6,10 +6,11 @@ for Nifty 100 stocks.
 
 import sqlite3
 import logging
-from typing import Optional, Dict, Any, List
+from typing import Optional
 import pandas as pd
 
 logger = logging.getLogger(__name__)
+
 
 class PeerEngine:
     """Engine for peer group comparison and percentile rank computations."""
@@ -63,18 +64,33 @@ class PeerEngine:
 
             # Map peer_group_name (use sub_sector if peer_group_name not available)
             if len(peers_df) > 0 and "peer_group_name" in peers_df.columns:
-                merged = pd.merge(merged, peers_df[["company_id", "peer_group_name"]], on="company_id", how="left")
-                merged["effective_peer_group"] = merged["peer_group_name"].fillna(merged["sub_sector"]).fillna(merged["broad_sector"])
+                merged = pd.merge(
+                    merged,
+                    peers_df[["company_id", "peer_group_name"]],
+                    on="company_id",
+                    how="left",
+                )
+                merged["effective_peer_group"] = (
+                    merged["peer_group_name"]
+                    .fillna(merged["sub_sector"])
+                    .fillna(merged["broad_sector"])
+                )
             else:
-                merged["effective_peer_group"] = merged["sub_sector"].fillna(merged["broad_sector"])
+                merged["effective_peer_group"] = merged["sub_sector"].fillna(
+                    merged["broad_sector"]
+                )
 
             self.ratios_df = merged
-            logger.info(f"Loaded peer data for {len(merged)} companies across {merged['effective_peer_group'].nunique()} peer groups.")
+            logger.info(
+                f"Loaded peer data for {len(merged)} companies across {merged['effective_peer_group'].nunique()} peer groups."
+            )
             return merged
         finally:
             conn.close()
 
-    def compute_peer_percentiles(self, df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
+    def compute_peer_percentiles(
+        self, df: Optional[pd.DataFrame] = None
+    ) -> pd.DataFrame:
         """
         Computes percentile ranks (0 to 100) for standard metrics within each peer group.
         Higher numeric values get higher percentile ranks for standard metrics.
@@ -85,9 +101,15 @@ class PeerEngine:
             df = self.ratios_df.copy()
 
         standard_metrics = [
-            "return_on_equity_pct", "roce_pct", "roa_pct",
-            "net_profit_margin_pct", "operating_profit_margin_pct",
-            "asset_turnover", "free_cash_flow_cr", "revenue_cagr_5yr", "pat_cagr_5yr"
+            "return_on_equity_pct",
+            "roce_pct",
+            "roa_pct",
+            "net_profit_margin_pct",
+            "operating_profit_margin_pct",
+            "asset_turnover",
+            "free_cash_flow_cr",
+            "revenue_cagr_5yr",
+            "pat_cagr_5yr",
         ]
 
         def _percentile_group(g):
@@ -102,15 +124,23 @@ class PeerEngine:
             return res
 
         try:
-            res_df = df.groupby("effective_peer_group", group_keys=False, include_groups=False).apply(_percentile_group)
+            res_df = df.groupby(
+                "effective_peer_group", group_keys=False, include_groups=False
+            ).apply(_percentile_group)
         except TypeError:
-            res_df = df.groupby("effective_peer_group", group_keys=False).apply(_percentile_group)
+            res_df = df.groupby("effective_peer_group", group_keys=False).apply(
+                _percentile_group
+            )
 
         self.percentiles_df = res_df
-        logger.info(f"Computed standard metric percentiles across {len(res_df)} companies.")
+        logger.info(
+            f"Computed standard metric percentiles across {len(res_df)} companies."
+        )
         return res_df
 
-    def compute_inverse_debt_percentiles(self, df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
+    def compute_inverse_debt_percentiles(
+        self, df: Optional[pd.DataFrame] = None
+    ) -> pd.DataFrame:
         """
         Computes INVERSE percentile ranks for leverage metrics (debt_to_equity, net_debt_cr).
         For debt metrics, LOWER is BETTER, so lower numeric values get higher percentile scores (100 = lowest debt).
@@ -134,13 +164,19 @@ class PeerEngine:
                         res[col_name] = 100.0
                     else:
                         # Invert rank: rank ascending=False gives 1st rank to smallest debt
-                        res[col_name] = (res[metric].rank(pct=True, ascending=False) * 100.0).round(2)
+                        res[col_name] = (
+                            res[metric].rank(pct=True, ascending=False) * 100.0
+                        ).round(2)
             return res
 
         try:
-            res_df = df.groupby("effective_peer_group", group_keys=False, include_groups=False).apply(_inverse_group)
+            res_df = df.groupby(
+                "effective_peer_group", group_keys=False, include_groups=False
+            ).apply(_inverse_group)
         except TypeError:
-            res_df = df.groupby("effective_peer_group", group_keys=False).apply(_inverse_group)
+            res_df = df.groupby("effective_peer_group", group_keys=False).apply(
+                _inverse_group
+            )
 
         self.percentiles_df = res_df
         logger.info("Computed inverse leverage metric percentiles.")
@@ -174,14 +210,14 @@ class PeerEngine:
             "free_cash_flow_cr_percentile": "REAL",
             "revenue_cagr_5yr_percentile": "REAL",
             "pat_cagr_5yr_percentile": "REAL",
-            "overall_peer_percentile": "REAL"
+            "overall_peer_percentile": "REAL",
         }
 
         conn = self.get_connection()
         try:
             cursor = conn.cursor()
             cursor.execute("DROP TABLE IF EXISTS peer_percentiles;")
-            
+
             create_sql = """
             CREATE TABLE peer_percentiles (
                 company_id TEXT PRIMARY KEY,
@@ -213,19 +249,23 @@ class PeerEngine:
             save_df["roce_percentile"] = df.get("roce_pct_percentile", 0.0)
             save_df["de_percentile_inv"] = df.get("debt_to_equity_percentile", 0.0)
             save_df["npm_percentile"] = df.get("net_profit_margin_pct_percentile", 0.0)
-            save_df["opm_percentile"] = df.get("operating_profit_margin_pct_percentile", 0.0)
-            save_df["asset_turnover_percentile"] = df.get("asset_turnover_percentile", 0.0)
+            save_df["opm_percentile"] = df.get(
+                "operating_profit_margin_pct_percentile", 0.0
+            )
+            save_df["asset_turnover_percentile"] = df.get(
+                "asset_turnover_percentile", 0.0
+            )
             save_df["fcf_percentile"] = df.get("free_cash_flow_cr_percentile", 0.0)
-            save_df["revenue_cagr_percentile"] = df.get("revenue_cagr_5yr_percentile", 0.0)
+            save_df["revenue_cagr_percentile"] = df.get(
+                "revenue_cagr_5yr_percentile", 0.0
+            )
             save_df["pat_cagr_percentile"] = df.get("pat_cagr_5yr_percentile", 0.0)
             save_df["overall_peer_percentile"] = df["overall_peer_percentile"]
 
             save_df.to_sql("peer_percentiles", conn, if_exists="append", index=False)
             conn.commit()
-            logger.info(f"Saved {len(save_df)} rows to `peer_percentiles` database table.")
+            logger.info(
+                f"Saved {len(save_df)} rows to `peer_percentiles` database table."
+            )
         finally:
             conn.close()
-
-
-
-

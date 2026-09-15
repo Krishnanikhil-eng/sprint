@@ -15,11 +15,13 @@ def test_load_excel_missing_file():
 
 def test_load_excel_valid_file(tmp_path):
     # Create temporary Excel file
-    df_raw = pd.DataFrame({
-        " Company ID ": [" reliance ", "tcs"],
-        " YEAR ": ["Dec 2023", "Mar 2022"],
-        " SALES ": [1000, 2000]
-    })
+    df_raw = pd.DataFrame(
+        {
+            " Company ID ": [" reliance ", "tcs"],
+            " YEAR ": ["Dec 2023", "Mar 2022"],
+            " SALES ": [1000, 2000],
+        }
+    )
     excel_path = tmp_path / "sample.xlsx"
     df_raw.to_excel(excel_path, index=False)
 
@@ -38,11 +40,9 @@ def test_load_excel_valid_file(tmp_path):
 
 
 def test_load_excel_column_name_cleaning(tmp_path):
-    df_raw = pd.DataFrame({
-        " Company ID ": ["ABB"],
-        "YEAR-END": [2024],
-        " Total Revenue ": [500]
-    })
+    df_raw = pd.DataFrame(
+        {" Company ID ": ["ABB"], "YEAR-END": [2024], " Total Revenue ": [500]}
+    )
     excel_path = tmp_path / "columns_test.xlsx"
     df_raw.to_excel(excel_path, index=False)
 
@@ -82,7 +82,9 @@ def test_load_excel_real_data_file():
 
 
 def test_load_excel_duplicate_columns(tmp_path):
-    df_raw = pd.DataFrame([[ "tcs", 2023, 100, 200 ]], columns=["Company ID", "Year", "Sales", "Sales"])
+    df_raw = pd.DataFrame(
+        [["tcs", 2023, 100, 200]], columns=["Company ID", "Year", "Sales", "Sales"]
+    )
     excel_path = tmp_path / "dup_cols.xlsx"
     df_raw.to_excel(excel_path, index=False)
     df_loaded = load_excel(excel_path)
@@ -90,11 +92,10 @@ def test_load_excel_duplicate_columns(tmp_path):
 
 
 def test_load_excel_empty_rows(tmp_path):
-    df_raw = pd.DataFrame([
-        ["tcs", 2023, 100],
-        [None, None, None],
-        ["infy", 2024, 200]
-    ], columns=["Company ID", "Year", "Sales"])
+    df_raw = pd.DataFrame(
+        [["tcs", 2023, 100], [None, None, None], ["infy", 2024, 200]],
+        columns=["Company ID", "Year", "Sales"],
+    )
     excel_path = tmp_path / "empty_rows.xlsx"
     df_raw.to_excel(excel_path, index=False)
     df_loaded = load_excel(excel_path)
@@ -110,7 +111,10 @@ def test_load_excel_column_normalization_case(tmp_path):
 
 
 def test_load_excel_data_types_integrity(tmp_path):
-    df_raw = pd.DataFrame([["HDFCBANK", "FY 2023", "1234.56"]], columns=["Company ID", "Year", "Net Profit"])
+    df_raw = pd.DataFrame(
+        [["HDFCBANK", "FY 2023", "1234.56"]],
+        columns=["Company ID", "Year", "Net Profit"],
+    )
     excel_path = tmp_path / "types_test.xlsx"
     df_raw.to_excel(excel_path, index=False)
     df_loaded = load_excel(excel_path)
@@ -123,4 +127,3 @@ def test_load_excel_invalid_extension(tmp_path):
     bad_path.write_text("not an excel file")
     with pytest.raises(Exception):
         load_excel(bad_path)
-

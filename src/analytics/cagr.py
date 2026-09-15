@@ -4,7 +4,7 @@ Computes 3Y, 5Y, 10Y Compound Annual Growth Rate (CAGR) for Revenue, PAT, and EP
 with robust 6-state edge case handling.
 """
 
-from typing import Optional, Tuple, List, Dict
+from typing import Optional, Tuple, Dict
 
 # Flag constants
 FLAG_NORMAL = "NORMAL"
@@ -15,10 +15,12 @@ FLAG_ZERO_BASE = "ZERO_BASE"
 FLAG_INSUFFICIENT = "INSUFFICIENT"
 
 
-def calculate_cagr(start_val: Optional[float], end_val: Optional[float], n_years: int) -> Tuple[Optional[float], str]:
+def calculate_cagr(
+    start_val: Optional[float], end_val: Optional[float], n_years: int
+) -> Tuple[Optional[float], str]:
     """
     Calculates Compound Annual Growth Rate (CAGR) = ((end / start) ** (1 / n) - 1) * 100
-    
+
     Handles 6 Edge Cases:
     1. Positive -> Positive: NORMAL CAGR
     2. Positive -> Negative: None, DECLINE_TO_LOSS
@@ -56,7 +58,9 @@ def calculate_cagr(start_val: Optional[float], end_val: Optional[float], n_years
     return None, FLAG_INSUFFICIENT
 
 
-def calculate_series_cagr(time_series: Dict[int, float], end_year: int, n_years: int) -> Tuple[Optional[float], str]:
+def calculate_series_cagr(
+    time_series: Dict[int, float], end_year: int, n_years: int
+) -> Tuple[Optional[float], str]:
     """
     Given a dictionary mapping year -> metric value, extracts start_val and end_val
     and calculates n_years CAGR.
@@ -64,5 +68,5 @@ def calculate_series_cagr(time_series: Dict[int, float], end_year: int, n_years:
     start_year = end_year - n_years
     if start_year not in time_series or end_year not in time_series:
         return None, FLAG_INSUFFICIENT
-    
+
     return calculate_cagr(time_series[start_year], time_series[end_year], n_years)

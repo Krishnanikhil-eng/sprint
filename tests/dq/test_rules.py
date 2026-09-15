@@ -5,9 +5,7 @@ and data anomaly detection rules.
 """
 
 import sqlite3
-import pytest
 import pandas as pd
-from pathlib import Path
 
 
 def get_db():
@@ -49,14 +47,20 @@ def test_dq_financial_ratios_year_range():
 
 def test_dq_no_duplicate_company_year_ratios():
     conn = get_db()
-    df = pd.read_sql_query("SELECT company_id, year, COUNT(*) as cnt FROM financial_ratios GROUP BY company_id, year HAVING cnt > 1", conn)
+    df = pd.read_sql_query(
+        "SELECT company_id, year, COUNT(*) as cnt FROM financial_ratios GROUP BY company_id, year HAVING cnt > 1",
+        conn,
+    )
     conn.close()
     assert df.empty
 
 
 def test_dq_roe_within_plausible_range():
     conn = get_db()
-    df = pd.read_sql_query("SELECT return_on_equity_pct FROM financial_ratios WHERE return_on_equity_pct IS NOT NULL", conn)
+    df = pd.read_sql_query(
+        "SELECT return_on_equity_pct FROM financial_ratios WHERE return_on_equity_pct IS NOT NULL",
+        conn,
+    )
     conn.close()
     # ROE should generally lie between -2000% and +2000%
     assert (df["return_on_equity_pct"] > -2000).all()
@@ -64,21 +68,29 @@ def test_dq_roe_within_plausible_range():
 
 def test_dq_debt_to_equity_non_negative_unless_null():
     conn = get_db()
-    df = pd.read_sql_query("SELECT debt_to_equity FROM financial_ratios WHERE debt_to_equity IS NOT NULL", conn)
+    df = pd.read_sql_query(
+        "SELECT debt_to_equity FROM financial_ratios WHERE debt_to_equity IS NOT NULL",
+        conn,
+    )
     conn.close()
     assert (df["debt_to_equity"] >= 0).all()
 
 
 def test_dq_market_cap_positive():
     conn = get_db()
-    df = pd.read_sql_query("SELECT market_cap_crore FROM market_cap WHERE market_cap_crore IS NOT NULL", conn)
+    df = pd.read_sql_query(
+        "SELECT market_cap_crore FROM market_cap WHERE market_cap_crore IS NOT NULL",
+        conn,
+    )
     conn.close()
     assert (df["market_cap_crore"] > 0).all()
 
 
 def test_dq_pe_ratio_reasonable_bounds():
     conn = get_db()
-    df = pd.read_sql_query("SELECT pe_ratio FROM market_cap WHERE pe_ratio IS NOT NULL", conn)
+    df = pd.read_sql_query(
+        "SELECT pe_ratio FROM market_cap WHERE pe_ratio IS NOT NULL", conn
+    )
     conn.close()
     # PE ratios should not be extreme negative errors
     assert (df["pe_ratio"] > -500).all()
@@ -93,10 +105,16 @@ def test_dq_cash_flow_integrity():
 
 def test_dq_documents_url_format():
     conn = get_db()
-    df = pd.read_sql_query("SELECT annual_report FROM documents WHERE annual_report IS NOT NULL", conn)
+    df = pd.read_sql_query(
+        "SELECT annual_report FROM documents WHERE annual_report IS NOT NULL", conn
+    )
     conn.close()
     urls = df["annual_report"]
-    valid_count = sum(1 for u in urls if isinstance(u, str) and (u.startswith("http://") or u.startswith("https://")))
+    valid_count = sum(
+        1
+        for u in urls
+        if isinstance(u, str) and (u.startswith("http://") or u.startswith("https://"))
+    )
     assert valid_count > 0
 
 
