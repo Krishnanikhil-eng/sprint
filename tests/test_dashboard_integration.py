@@ -67,7 +67,7 @@ class TestDashboardIntegration:
         for page in expected_pages:
             page_path = pages_dir / page
             try:
-                with open(page_path, 'r') as f:
+                with open(page_path, 'r', encoding='utf-8') as f:
                     content = f.read()
                 assert len(content) > 0, f"Page {page} is empty"
                 assert "import streamlit" in content, f"Page {page} missing streamlit import"
