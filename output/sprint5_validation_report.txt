@@ -1,0 +1,38 @@
+============================================================
+SPRINT 5 — FINAL DEFINITION OF DONE VALIDATION REPORT
+============================================================
+1. Total Companies Evaluated: 92
+
+--- NLP PROS & CONS GENERATOR ---
+Total Pro Rows (confidence > 60): 499
+Total Con Rows (confidence > 60): 99
+Companies Missing Pros: 0 []
+Companies Missing Cons: 43
+
+--- ANALYSIS TEXT PARSER ---
+Parsed Metric Rows: 65
+Parse Failures Logged: 15
+CAGR High Divergence Flags (> 5%): 11
+
+--- CASH FLOW INTELLIGENCE ---
+Cash Flow Intelligence Rows: 92
+Distress Flagged Alerts: 13 (Alerts CSV Rows: 13)
+Deleveraging Flagged Companies: 26
+CFO Quality Distribution: {'High Quality': 62, 'Accrual Risk': 17, 'Moderate': 12, 'Unknown': 1}
+CapEx Intensity Distribution: {'Capital Intensive': 45, 'Moderate': 25, 'Asset Light': 21, 'Unknown': 1}
+
+--- CAPITAL ALLOCATION INTEGRATION ---
+Capital Allocation Distribution: {'Cash Accumulator': 0, 'Distress Signal': 3, 'Growth Funded by Debt': 12, 'Liquidating Assets': 7, 'Mixed': 13, 'Pre-Revenue': 1, 'Reinvestor': 16, 'Shareholder Returns': 39}
+YoY Pattern Changes Count: 49
+
+--- REPORTING ENGINE ---
+Company Tearsheet PDFs Generated (2 pages each): 91
+Intentionally Skipped Tearsheets: 1
+Sector PDF Reports Generated: 10
+Portfolio Summary PDF Page Count: 92
+
+--- COMPLETE TEST SUITE ---
+Pytest Execution Result: ====================== 139 passed, 16 warnings in 17.70s ======================
+============================================================
+STATUS: SPRINT 5 IS COMPLETE & VALIDATED.
+============================================================
