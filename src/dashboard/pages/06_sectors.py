@@ -5,156 +5,148 @@ Sector Analysis Screen
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 
 from src.dashboard.utils.db import get_latest_ratios_all, get_sectors, get_connection
+from src.dashboard.utils.ui import safe_render, render_simulated_warning
 
-st.header("Sector Analysis")
+st.title("Sector Intelligence")
 
-# Load latest ratios, sectors, and sales revenue
-try:
+@safe_render()
+def render_sector_intelligence():
     ratios_df = get_latest_ratios_all()
     sectors_df = get_sectors()
 
-    # Fetch latest sales revenue from profitandloss
+    if ratios_df.empty or sectors_df.empty:
+        st.warning("Data is unavailable for sector analysis.")
+        return
+
+    # Fetch latest sales revenue
     conn = get_connection()
     try:
-        pl_query = """
-        WITH LatestPL AS (
-            SELECT company_id, sales,
-                   ROW_NUMBER() OVER (PARTITION BY company_id ORDER BY year DESC) as rn
-            FROM profitandloss
-        )
-        SELECT company_id, sales FROM LatestPL WHERE rn = 1
-        """
-        pl_df = pd.read_sql_query(pl_query, conn)
+        pl_df = pd.read_sql_query("""
+            WITH LatestPL AS (
+                SELECT company_id, sales,
+                       ROW_NUMBER() OVER (PARTITION BY company_id ORDER BY year DESC) as rn
+                FROM profitandloss
+            )
+            SELECT company_id, sales FROM LatestPL WHERE rn = 1
+        """, conn)
+        merged_df = pd.merge(ratios_df, pl_df, on="company_id", how="left")
     finally:
         conn.close()
 
-    merged_df = pd.merge(ratios_df, pl_df, on="company_id", how="left")
-except Exception as e:
-    st.error(f"Error loading data for sector analysis: {e}")
-    st.stop()
-
-if merged_df.empty or sectors_df.empty:
-    st.warning("No data available for sector analysis")
-    st.stop()
-
-# Sector dropdown
-available_sectors = sorted(merged_df["broad_sector"].dropna().unique().tolist())
-selected_sector = st.selectbox(
-    "Select Sector",
-    options=available_sectors,
-    help="Select a sector for comparative bubble chart & median analysis",
-)
-
-if not selected_sector:
-    st.info("Please select a sector")
-    st.stop()
-
-# Filter by selected sector
-sector_df = merged_df[merged_df["broad_sector"] == selected_sector].copy()
-
-if sector_df.empty:
-    st.warning(f"No data available for sector: {selected_sector}")
-    st.stop()
-
-st.info(f"Analyzing {len(sector_df)} companies in {selected_sector}")
-
-# Bubble chart: X = Revenue, Y = ROE, Bubble size = Market Cap, Colour = sub-sector
-st.subheader(f"{selected_sector} — Revenue vs ROE (Bubble Size = Market Cap) ⚠️ [SIMULATED DATA]")
-
-bubble_data = sector_df.dropna(subset=["sales", "return_on_equity_pct"]).copy()
-bubble_data["sales"] = pd.to_numeric(bubble_data["sales"], errors="coerce")
-bubble_data["return_on_equity_pct"] = pd.to_numeric(
-    bubble_data["return_on_equity_pct"], errors="coerce"
-)
-
-# Ensure positive market cap for bubble sizing
-if "market_cap_crore" in bubble_data.columns:
-    bubble_data["market_cap_size"] = pd.to_numeric(
-        bubble_data["market_cap_crore"], errors="coerce"
-    ).fillna(1000.0)
-    bubble_data["market_cap_size"] = bubble_data["market_cap_size"].apply(
-        lambda x: max(100.0, float(x))
-    )
-else:
-    bubble_data["market_cap_size"] = 1000.0
-
-if not bubble_data.empty:
-    fig = px.scatter(
-        bubble_data,
-        x="sales",
-        y="return_on_equity_pct",
-        size="market_cap_size",
-        color="sub_sector" if "sub_sector" in bubble_data.columns else None,
-        hover_name="company_name",
-        hover_data=["company_id", "market_cap_crore", "pe_ratio"],
-        title=f"{selected_sector}: Revenue vs ROE",
-        labels={
-            "sales": "Revenue (₹ Cr)",
-            "return_on_equity_pct": "ROE (%)",
-            "sub_sector": "Sub-Sector",
-            "market_cap_size": "Market Cap",
-            "market_cap_crore": "Market Cap (₹ Cr) ⚠️ [SIMULATED]",
-            "pe_ratio": "P/E Ratio ⚠️ [SIMULATED]",
-        },
-    )
-    fig.update_layout(height=500, margin=dict(l=20, r=20, t=40, b=20))
-    st.plotly_chart(fig, use_container_width=True)
-else:
-    st.info("Insufficient data to render bubble chart for this sector")
-
-st.markdown("---")
-
-# Sector median KPIs bar chart
-st.subheader(f"{selected_sector} — Sector Median KPIs")
-
-kpi_metrics = [
-    "return_on_equity_pct",
-    "roce_pct",
-    "debt_to_equity",
-    "net_profit_margin_pct",
-    "operating_profit_margin_pct",
-    "revenue_cagr_5yr",
-    "pat_cagr_5yr",
-]
-
-kpi_labels = {
-    "return_on_equity_pct": "ROE (%)",
-    "roce_pct": "ROCE (%)",
-    "debt_to_equity": "D/E",
-    "net_profit_margin_pct": "NPM (%)",
-    "operating_profit_margin_pct": "OPM (%)",
-    "revenue_cagr_5yr": "Rev CAGR (%)",
-    "pat_cagr_5yr": "PAT CAGR (%)",
-}
-
-available_kpis = [m for m in kpi_metrics if m in sector_df.columns]
-
-if available_kpis:
-    median_values = {}
-    for metric in available_kpis:
-        val_series = pd.to_numeric(sector_df[metric], errors="coerce").dropna()
-        if not val_series.empty:
-            median_values[kpi_labels.get(metric, metric)] = float(val_series.median())
-
-    if median_values:
-        median_df = pd.DataFrame(
-            list(median_values.items()), columns=["KPI", "Median Value"]
+    # Sector dropdown
+    available_sectors = sorted(merged_df["broad_sector"].dropna().unique().tolist())
+    
+    col1, col2 = st.columns([1, 2])
+    with col1:
+        selected_sector = st.selectbox(
+            "Select Sector",
+            options=available_sectors,
+            help="Select a sector to analyze aggregated financials and distributions."
         )
 
-        fig2 = px.bar(
-            median_df,
-            x="KPI",
-            y="Median Value",
-            title=f"{selected_sector} Median Performance Indicators",
-            color="Median Value",
-            color_continuous_scale="Viridis",
-            labels={"Median Value": "Median Value", "KPI": "Indicator"},
+    if not selected_sector:
+        st.info("Please select a sector to begin.")
+        return
+
+    sector_df = merged_df[merged_df["broad_sector"] == selected_sector].copy()
+    
+    if sector_df.empty:
+        st.warning(f"No valid data available for {selected_sector}.")
+        return
+
+    st.markdown("---")
+    st.markdown(f"### {selected_sector} Sector Overview")
+    
+    comp_count = len(sector_df)
+    sub_sectors = sector_df["sub_sector"].nunique()
+    total_mc = pd.to_numeric(sector_df.get("market_cap_crore", pd.Series()), errors="coerce").sum()
+    med_pe = pd.to_numeric(sector_df.get("pe_ratio", pd.Series()), errors="coerce").median()
+
+    ov1, ov2, ov3, ov4 = st.columns(4)
+    ov1.metric("Constituent Companies", comp_count)
+    ov2.metric("Sub-Sectors", sub_sectors)
+    ov3.metric("Total Market Cap (Cr)", f"₹{total_mc:,.0f}" if total_mc else "N/A")
+    ov4.metric("Median P/E", f"{med_pe:.2f}x" if pd.notna(med_pe) else "N/A")
+
+    st.markdown("---")
+    
+    st.subheader("Financial Distributions")
+    dist_metrics = {
+        "return_on_equity_pct": "ROE (%)",
+        "roce_pct": "ROCE (%)",
+        "net_profit_margin_pct": "Net Profit Margin (%)",
+        "debt_to_equity": "D/E Ratio",
+        "pe_ratio": "P/E Ratio",
+        "revenue_cagr_5yr": "Revenue CAGR 5Yr (%)"
+    }
+    
+    avail_dist = [m for m in dist_metrics.keys() if m in sector_df.columns]
+    
+    if avail_dist:
+        dist_col1, dist_col2 = st.columns([1, 3])
+        with dist_col1:
+            selected_dist = st.selectbox("Select Distribution Metric", options=avail_dist, format_func=lambda x: dist_metrics[x])
+            
+        with dist_col2:
+            clean_series = pd.to_numeric(sector_df[selected_dist], errors="coerce").dropna()
+            if not clean_series.empty:
+                fig_box = go.Figure()
+                fig_box.add_trace(go.Box(
+                    x=clean_series,
+                    name=dist_metrics[selected_dist],
+                    boxpoints='all',
+                    jitter=0.3,
+                    pointpos=-1.8,
+                    marker_color='#1f77b4'
+                ))
+                fig_box.update_layout(
+                    height=300,
+                    margin=dict(l=20, r=20, t=20, b=20),
+                    xaxis_title=dist_metrics[selected_dist]
+                )
+                st.plotly_chart(fig_box, use_container_width=True)
+            else:
+                st.info("Insufficient data for distribution plot.")
+
+    st.markdown("---")
+    
+    st.subheader("Company Mapping (Revenue vs ROE)")
+    render_simulated_warning()
+    
+    bubble_data = sector_df.dropna(subset=["sales", "return_on_equity_pct"]).copy()
+    if not bubble_data.empty:
+        bubble_data["sales"] = pd.to_numeric(bubble_data["sales"], errors="coerce")
+        bubble_data["return_on_equity_pct"] = pd.to_numeric(bubble_data["return_on_equity_pct"], errors="coerce")
+        
+        # Ensure positive market cap for bubble sizing
+        if "market_cap_crore" in bubble_data.columns:
+            bubble_data["mc_size"] = pd.to_numeric(bubble_data["market_cap_crore"], errors="coerce").fillna(1000.0)
+            bubble_data["mc_size"] = bubble_data["mc_size"].apply(lambda x: max(100.0, float(x)))
+        else:
+            bubble_data["mc_size"] = 1000.0
+
+        fig_scatter = px.scatter(
+            bubble_data,
+            x="sales", y="return_on_equity_pct",
+            size="mc_size",
+            color="sub_sector" if "sub_sector" in bubble_data.columns else None,
+            hover_name="company_name",
+            hover_data=["company_id", "market_cap_crore", "pe_ratio"],
+            labels={
+                "sales": "Revenue (₹ Cr)",
+                "return_on_equity_pct": "ROE (%)",
+                "sub_sector": "Sub-Sector",
+                "mc_size": "Market Cap",
+                "market_cap_crore": "Market Cap (Cr)",
+            },
+            color_discrete_sequence=px.colors.qualitative.Prism
         )
-        fig2.update_layout(height=400, margin=dict(l=20, r=20, t=40, b=20))
-        st.plotly_chart(fig2, use_container_width=True)
+        fig_scatter.update_layout(height=500, margin=dict(l=20, r=20, t=40, b=20))
+        st.plotly_chart(fig_scatter, use_container_width=True)
     else:
-        st.info("No valid KPI data available for median calculation")
-else:
-    st.info("No KPI metrics available for sector analysis")
+        st.info("Insufficient data for company mapping scatter plot.")
+
+render_sector_intelligence()

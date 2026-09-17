@@ -4,279 +4,169 @@ Stock Screener Screen
 
 import streamlit as st
 import pandas as pd
+from pathlib import Path
 
 from src.dashboard.utils.db import get_latest_ratios_all
 from src.dashboard.config import SCREENER_DEFAULTS, PRESET_STRATEGIES
+from src.dashboard.utils.ui import safe_render
 
-st.header("Stock Screener")
+st.title("Financial Screener")
 
-# Load data
-try:
+@safe_render()
+def render_screener():
     ratios_df = get_latest_ratios_all()
-except Exception as e:
-    st.error(f"Error loading data: {e}")
-    st.stop()
+    if ratios_df.empty:
+        st.warning("No financial data available for screening.")
+        return
 
-if ratios_df.empty:
-    st.warning("No data available for screening")
-    st.stop()
-
-# Sidebar filters
-st.sidebar.header("Filter Criteria")
-
-# Initialize session state for filters if not present
-filter_keys = [
-    "min_roe",
-    "max_de",
-    "min_fcf",
-    "min_revenue_cagr",
-    "min_pat_cagr",
-    "min_opm",
-    "max_pe",
-    "max_pb",
-    "min_dividend_yield",
-    "min_icr",
-]
-
-for key in filter_keys:
-    if f"filter_{key}" not in st.session_state:
-        st.session_state[f"filter_{key}"] = SCREENER_DEFAULTS.get(key, 0.0)
-
-
-# Preset strategy handler
-def apply_preset():
-    selected_preset = st.session_state.preset_selector
-    if selected_preset in PRESET_STRATEGIES:
-        preset_dict = PRESET_STRATEGIES[selected_preset]
-        for key in filter_keys:
-            if key in preset_dict:
-                st.session_state[f"filter_{key}"] = float(preset_dict[key])
-            else:
-                st.session_state[f"filter_{key}"] = float(
-                    SCREENER_DEFAULTS.get(key, 0.0)
-                )
-
-
-# Preset selector dropdown
-st.sidebar.subheader("Preset Strategies")
-st.sidebar.selectbox(
-    "Select a preset strategy",
-    options=["Custom"] + list(PRESET_STRATEGIES.keys()),
-    key="preset_selector",
-    on_change=apply_preset,
-    help="Pre-defined filter combinations for quick stock screening",
-)
-
-st.sidebar.markdown("---")
-
-# 10 Filter Inputs
-min_roe = st.sidebar.number_input(
-    "ROE Minimum (%)",
-    min_value=-50.0,
-    max_value=100.0,
-    step=0.5,
-    key="filter_min_roe",
-    help="Minimum Return on Equity percentage",
-)
-
-max_de = st.sidebar.number_input(
-    "D/E Maximum",
-    min_value=0.0,
-    max_value=50.0,
-    step=0.1,
-    key="filter_max_de",
-    help="Maximum Debt to Equity ratio",
-)
-
-min_fcf = st.sidebar.number_input(
-    "FCF Minimum (Cr)",
-    min_value=-50000.0,
-    max_value=100000.0,
-    step=10.0,
-    key="filter_min_fcf",
-    help="Minimum Free Cash Flow in Crores",
-)
-
-min_revenue_cagr = st.sidebar.number_input(
-    "Revenue CAGR Minimum (%)",
-    min_value=-50.0,
-    max_value=100.0,
-    step=1.0,
-    key="filter_min_revenue_cagr",
-    help="Minimum 5-year Revenue CAGR percentage",
-)
-
-min_pat_cagr = st.sidebar.number_input(
-    "PAT CAGR Minimum (%)",
-    min_value=-50.0,
-    max_value=100.0,
-    step=1.0,
-    key="filter_min_pat_cagr",
-    help="Minimum 5-year PAT CAGR percentage",
-)
-
-min_opm = st.sidebar.number_input(
-    "OPM Minimum (%)",
-    min_value=-50.0,
-    max_value=100.0,
-    step=0.5,
-    key="filter_min_opm",
-    help="Minimum Operating Profit Margin percentage",
-)
-
-max_pe = st.sidebar.number_input(
-    "P/E Maximum",
-    min_value=0.0,
-    max_value=1000.0,
-    step=1.0,
-    key="filter_max_pe",
-    help="Maximum Price to Earnings ratio",
-)
-
-max_pb = st.sidebar.number_input(
-    "P/B Maximum",
-    min_value=0.0,
-    max_value=100.0,
-    step=0.5,
-    key="filter_max_pb",
-    help="Maximum Price to Book ratio",
-)
-
-min_dividend_yield = st.sidebar.number_input(
-    "Dividend Yield Minimum (%)",
-    min_value=0.0,
-    max_value=20.0,
-    step=0.1,
-    key="filter_min_dividend_yield",
-    help="Minimum Dividend Yield percentage",
-)
-
-min_icr = st.sidebar.number_input(
-    "ICR Minimum",
-    min_value=0.0,
-    max_value=100.0,
-    step=0.5,
-    key="filter_min_icr",
-    help="Minimum Interest Coverage Ratio",
-)
-
-# Apply filters dynamically
-filtered_df = ratios_df.copy()
-
-if "return_on_equity_pct" in filtered_df.columns:
-    filtered_df = filtered_df[
-        filtered_df["return_on_equity_pct"].fillna(-999) >= min_roe
+    # Sidebar Filter Presets
+    st.sidebar.markdown("### Screener Presets")
+    
+    filter_keys = [
+        "min_roe", "max_de", "min_fcf", "min_revenue_cagr", 
+        "min_pat_cagr", "min_opm", "max_pe", "max_pb", 
+        "min_dividend_yield", "min_icr"
     ]
 
-if "debt_to_equity" in filtered_df.columns:
-    filtered_df = filtered_df[filtered_df["debt_to_equity"].fillna(999) <= max_de]
+    for key in filter_keys:
+        if f"filter_{key}" not in st.session_state:
+            st.session_state[f"filter_{key}"] = SCREENER_DEFAULTS.get(key, 0.0)
 
-if "free_cash_flow_cr" in filtered_df.columns:
-    filtered_df = filtered_df[
-        filtered_df["free_cash_flow_cr"].fillna(-99999) >= min_fcf
-    ]
+    def apply_preset():
+        selected_preset = st.session_state.preset_selector
+        if selected_preset in PRESET_STRATEGIES:
+            preset_dict = PRESET_STRATEGIES[selected_preset]
+            for key in filter_keys:
+                st.session_state[f"filter_{key}"] = float(preset_dict.get(key, SCREENER_DEFAULTS.get(key, 0.0)))
 
-if "revenue_cagr_5yr" in filtered_df.columns:
-    filtered_df = filtered_df[
-        filtered_df["revenue_cagr_5yr"].fillna(-999) >= min_revenue_cagr
-    ]
+    selected_preset = st.sidebar.selectbox(
+        "Institutional Strategies",
+        options=["Custom"] + list(PRESET_STRATEGIES.keys()),
+        key="preset_selector",
+        on_change=apply_preset,
+        help="Pre-defined filter combinations based on classic institutional strategies."
+    )
+    
+    if selected_preset != "Custom":
+        st.sidebar.caption(f"Applied: {selected_preset}")
 
-if "pat_cagr_5yr" in filtered_df.columns:
-    filtered_df = filtered_df[filtered_df["pat_cagr_5yr"].fillna(-999) >= min_pat_cagr]
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("### Manual Filters")
 
-if "operating_profit_margin_pct" in filtered_df.columns:
-    filtered_df = filtered_df[
-        filtered_df["operating_profit_margin_pct"].fillna(-999) >= min_opm
-    ]
+    with st.sidebar.expander("Profitability & Return", expanded=True):
+        min_roe = st.number_input("Min ROE (%)", min_value=-50.0, max_value=100.0, step=0.5, key="filter_min_roe")
+        min_opm = st.number_input("Min OPM (%)", min_value=-50.0, max_value=100.0, step=0.5, key="filter_min_opm")
 
-if "pe_ratio" in filtered_df.columns and max_pe < 1000.0:
-    filtered_df = filtered_df[filtered_df["pe_ratio"].fillna(9999) <= max_pe]
+    with st.sidebar.expander("Valuation", expanded=False):
+        max_pe = st.number_input("Max P/E", min_value=0.0, max_value=1000.0, step=1.0, key="filter_max_pe")
+        max_pb = st.number_input("Max P/B", min_value=0.0, max_value=100.0, step=0.5, key="filter_max_pb")
+        min_dividend_yield = st.number_input("Min Div Yield (%)", min_value=0.0, max_value=20.0, step=0.1, key="filter_min_dividend_yield")
 
-if "pb_ratio" in filtered_df.columns and max_pb < 100.0:
-    filtered_df = filtered_df[filtered_df["pb_ratio"].fillna(9999) <= max_pb]
+    with st.sidebar.expander("Financial Health", expanded=False):
+        max_de = st.number_input("Max D/E", min_value=0.0, max_value=50.0, step=0.1, key="filter_max_de")
+        min_icr = st.number_input("Min ICR", min_value=0.0, max_value=100.0, step=0.5, key="filter_min_icr")
+        min_fcf = st.number_input("Min FCF (Cr)", min_value=-50000.0, max_value=100000.0, step=10.0, key="filter_min_fcf")
 
-if "dividend_yield_pct" in filtered_df.columns:
-    filtered_df = filtered_df[
-        filtered_df["dividend_yield_pct"].fillna(0) >= min_dividend_yield
-    ]
+    with st.sidebar.expander("Growth (5-Year CAGR)", expanded=False):
+        min_revenue_cagr = st.number_input("Min Revenue CAGR (%)", min_value=-50.0, max_value=100.0, step=1.0, key="filter_min_revenue_cagr")
+        min_pat_cagr = st.number_input("Min PAT CAGR (%)", min_value=-50.0, max_value=100.0, step=1.0, key="filter_min_pat_cagr")
 
-if "interest_coverage" in filtered_df.columns:
-    filtered_df = filtered_df[filtered_df["interest_coverage"].fillna(0) >= min_icr]
+    # Apply filters
+    filtered_df = ratios_df.copy()
 
-# Display results count
-st.info(f"{len(filtered_df)} companies match your filters")
+    if "return_on_equity_pct" in filtered_df.columns:
+        filtered_df = filtered_df[filtered_df["return_on_equity_pct"].fillna(-999) >= min_roe]
+    if "debt_to_equity" in filtered_df.columns:
+        filtered_df = filtered_df[filtered_df["debt_to_equity"].fillna(999) <= max_de]
+    if "free_cash_flow_cr" in filtered_df.columns:
+        filtered_df = filtered_df[filtered_df["free_cash_flow_cr"].fillna(-99999) >= min_fcf]
+    if "revenue_cagr_5yr" in filtered_df.columns:
+        filtered_df = filtered_df[filtered_df["revenue_cagr_5yr"].fillna(-999) >= min_revenue_cagr]
+    if "pat_cagr_5yr" in filtered_df.columns:
+        filtered_df = filtered_df[filtered_df["pat_cagr_5yr"].fillna(-999) >= min_pat_cagr]
+    if "operating_profit_margin_pct" in filtered_df.columns:
+        filtered_df = filtered_df[filtered_df["operating_profit_margin_pct"].fillna(-999) >= min_opm]
+    if "pe_ratio" in filtered_df.columns and max_pe < 1000.0:
+        filtered_df = filtered_df[filtered_df["pe_ratio"].fillna(9999) <= max_pe]
+    if "pb_ratio" in filtered_df.columns and max_pb < 100.0:
+        filtered_df = filtered_df[filtered_df["pb_ratio"].fillna(9999) <= max_pb]
+    if "dividend_yield_pct" in filtered_df.columns:
+        filtered_df = filtered_df[filtered_df["dividend_yield_pct"].fillna(0) >= min_dividend_yield]
+    if "interest_coverage" in filtered_df.columns:
+        filtered_df = filtered_df[filtered_df["interest_coverage"].fillna(0) >= min_icr]
 
-# Results table
-if not filtered_df.empty:
-    display_cols = [
-        "company_id",
-        "company_name",
-        "broad_sector",
-        "composite_quality_score",
-        "return_on_equity_pct",
-        "debt_to_equity",
-        "pe_ratio",
-        "pb_ratio",
-        "dividend_yield_pct",
-        "free_cash_flow_cr",
-        "revenue_cagr_5yr",
-        "pat_cagr_5yr",
-        "operating_profit_margin_pct",
-        "interest_coverage",
-    ]
-
-    available_cols = [col for col in display_cols if col in filtered_df.columns]
-    results_df = filtered_df[available_cols].copy()
-
-    # Format columns for display
-    numeric_cols = [
-        "composite_quality_score",
-        "return_on_equity_pct",
-        "debt_to_equity",
-        "pe_ratio",
-        "pb_ratio",
-        "dividend_yield_pct",
-        "free_cash_flow_cr",
-        "revenue_cagr_5yr",
-        "pat_cagr_5yr",
-        "operating_profit_margin_pct",
-        "interest_coverage",
-    ]
-    for col in numeric_cols:
-        if col in results_df.columns:
+    # Main content
+    count = len(filtered_df)
+    st.markdown(f"### Results: {count} Companies")
+    
+    if not filtered_df.empty:
+        display_cols = [
+            "company_name", "broad_sector", "composite_quality_score", 
+            "return_on_equity_pct", "debt_to_equity", "pe_ratio", 
+            "pb_ratio", "dividend_yield_pct", "free_cash_flow_cr", 
+            "revenue_cagr_5yr", "pat_cagr_5yr", "operating_profit_margin_pct", 
+            "interest_coverage"
+        ]
+        
+        available_cols = [c for c in display_cols if c in filtered_df.columns]
+        results_df = filtered_df[available_cols].copy()
+        
+        # Format metrics cleanly
+        numeric_cols = [c for c in available_cols if c not in ["company_name", "broad_sector"]]
+        for col in numeric_cols:
             results_df[col] = pd.to_numeric(results_df[col], errors="coerce").round(2)
+            
+        column_rename = {
+            "company_name": "Company",
+            "broad_sector": "Sector",
+            "composite_quality_score": "Score",
+            "return_on_equity_pct": "ROE(%)",
+            "debt_to_equity": "D/E",
+            "pe_ratio": "P/E",
+            "pb_ratio": "P/B",
+            "dividend_yield_pct": "Div Yield(%)",
+            "free_cash_flow_cr": "FCF(Cr)",
+            "revenue_cagr_5yr": "Rev CAGR(%)",
+            "pat_cagr_5yr": "PAT CAGR(%)",
+            "operating_profit_margin_pct": "OPM(%)",
+            "interest_coverage": "ICR",
+        }
+        results_df = results_df.rename(columns=column_rename)
+        
+        # Display styled dataframe
+        st.dataframe(
+            results_df,
+            use_container_width=True,
+            hide_index=True,
+            height=500
+        )
+        
+        # Export Actions
+        col1, col2 = st.columns([1, 4])
+        with col1:
+            csv_data = results_df.to_csv(index=False)
+            st.download_button(
+                label="📥 Download Displayed Results (CSV)",
+                data=csv_data,
+                file_name="custom_screener_results.csv",
+                mime="text/csv",
+                use_container_width=True
+            )
+        
+        with col2:
+            # Provide link to the official pipeline generated report if it exists
+            report_path = Path("reports/screener_output.xlsx")
+            if report_path.exists():
+                with open(report_path, "rb") as f:
+                    st.download_button(
+                        label="📥 Download Official Institutional Report (XLSX)",
+                        data=f,
+                        file_name="screener_output.xlsx",
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        use_container_width=False,
+                        type="secondary"
+                    )
+    else:
+        st.info("No companies match the current filter criteria. Try relaxing the constraints.")
 
-    # Column rename mapping
-    column_rename = {
-        "company_id": "Company ID",
-        "company_name": "Company Name",
-        "broad_sector": "Sector",
-        "composite_quality_score": "Composite Score",
-        "return_on_equity_pct": "ROE (%)",
-        "debt_to_equity": "D/E",
-        "pe_ratio": "P/E",
-        "pb_ratio": "P/B",
-        "dividend_yield_pct": "Div Yield (%)",
-        "free_cash_flow_cr": "FCF (Cr)",
-        "revenue_cagr_5yr": "Rev CAGR 5Y (%)",
-        "pat_cagr_5yr": "PAT CAGR 5Y (%)",
-        "operating_profit_margin_pct": "OPM (%)",
-        "interest_coverage": "ICR",
-    }
-    results_df = results_df.rename(columns=column_rename)
-
-    st.dataframe(results_df.fillna("N/A"), use_container_width=True, height=450)
-
-    # CSV Export
-    csv_data = results_df.to_csv(index=False)
-    st.download_button(
-        label="Download Filtered Results (CSV)",
-        data=csv_data,
-        file_name="screener_results.csv",
-        mime="text/csv",
-        help="Download currently filtered stock screener results as a CSV file",
-    )
-else:
-    st.warning(
-        "No companies match your current filters. Try relaxing criteria or choosing a preset."
-    )
+render_screener()
