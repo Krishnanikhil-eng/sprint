@@ -12,7 +12,7 @@ import pandas as pd
 from typing import Dict, Any
 
 
-def validate_financial_ratios_db(db_path: str = "nifty100.db") -> Dict[str, Any]:
+def validate_financial_ratios_db(db_path: str = "data/nifty100.db") -> Dict[str, Any]:
     conn = sqlite3.connect(db_path)
 
     df = pd.read_sql_query("SELECT * FROM financial_ratios", conn)

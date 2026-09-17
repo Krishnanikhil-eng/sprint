@@ -21,7 +21,7 @@ def count_pdf_pages(filepath: str) -> int:
 
 
 def run_sprint5_validation(
-    db_path: str = "nifty100.db",
+    db_path: str = "data/nifty100.db",
     output_report: str = "output/sprint5_validation_report.txt",
 ) -> str:
     """Performs full DoD validation and writes summary report."""

@@ -11,7 +11,7 @@ from typing import List, Dict, Any
 
 from src.analytics.cagr import calculate_series_cagr
 
-DB_PATH_DEFAULT = "nifty100.db"
+DB_PATH_DEFAULT = "data/nifty100.db"
 OUTPUT_CSV_DEFAULT = "output/pros_cons_generated.csv"
 
 

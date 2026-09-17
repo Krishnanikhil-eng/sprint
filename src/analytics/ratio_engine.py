@@ -30,7 +30,7 @@ from src.analytics.cashflow_kpis import (
 )
 
 
-def run_ratio_engine(db_path: str = "nifty100.db") -> pd.DataFrame:
+def run_ratio_engine(db_path: str = "data/nifty100.db") -> pd.DataFrame:
     conn = sqlite3.connect(db_path)
 
     # Load core statement tables from DB
@@ -81,6 +81,10 @@ def run_ratio_engine(db_path: str = "nifty100.db") -> pd.DataFrame:
     master_df = pd.merge(
         master_df, m_cf, on=["company_id", "year"], how="outer", suffixes=("", "_cf")
     )
+
+    # Filter to only parent companies (resolve orphaned company IDs)
+    valid_company_ids = set(comp_df["company_id"].dropna().astype(str).str.strip())
+    master_df = master_df[master_df["company_id"].isin(valid_company_ids)].copy()
 
     master_df["year"] = master_df["year"].astype(int)
     master_df = master_df.sort_values(["company_id", "year"]).reset_index(drop=True)

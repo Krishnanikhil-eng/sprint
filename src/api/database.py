@@ -6,7 +6,7 @@ Provides SQLite connection helpers reusing the canonical nifty100.db database.
 import sqlite3
 from typing import Generator
 
-DB_PATH_DEFAULT = "nifty100.db"
+DB_PATH_DEFAULT = "data/nifty100.db"
 
 
 def get_db_connection(db_path: str = DB_PATH_DEFAULT) -> sqlite3.Connection:

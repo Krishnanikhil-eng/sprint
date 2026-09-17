@@ -61,7 +61,7 @@ if sector_df.empty:
 st.info(f"Analyzing {len(sector_df)} companies in {selected_sector}")
 
 # Bubble chart: X = Revenue, Y = ROE, Bubble size = Market Cap, Colour = sub-sector
-st.subheader(f"{selected_sector} — Revenue vs ROE (Bubble Size = Market Cap)")
+st.subheader(f"{selected_sector} — Revenue vs ROE (Bubble Size = Market Cap) ⚠️ [SIMULATED DATA]")
 
 bubble_data = sector_df.dropna(subset=["sales", "return_on_equity_pct"]).copy()
 bubble_data["sales"] = pd.to_numeric(bubble_data["sales"], errors="coerce")
@@ -95,6 +95,8 @@ if not bubble_data.empty:
             "return_on_equity_pct": "ROE (%)",
             "sub_sector": "Sub-Sector",
             "market_cap_size": "Market Cap",
+            "market_cap_crore": "Market Cap (₹ Cr) ⚠️ [SIMULATED]",
+            "pe_ratio": "P/E Ratio ⚠️ [SIMULATED]",
         },
     )
     fig.update_layout(height=500, margin=dict(l=20, r=20, t=40, b=20))

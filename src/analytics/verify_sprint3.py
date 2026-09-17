@@ -37,7 +37,7 @@ def run_sprint3_verification() -> bool:
 
     # 1. Database connection & ratio check
     print("\n[CHECK 1] Verifying SQLite database & ratio dataset...")
-    conn = sqlite3.connect("nifty100.db")
+    conn = sqlite3.connect("data/nifty100.db")
     cursor = conn.cursor()
     cursor.execute("SELECT COUNT(*) FROM financial_ratios;")
     ratio_count = cursor.fetchone()[0]
@@ -108,7 +108,7 @@ def run_sprint3_verification() -> bool:
     df_peers = peer_engine.compute_inverse_debt_percentiles()
     peer_engine.save_peer_percentiles_to_db(df_peers)
 
-    conn = sqlite3.connect("nifty100.db")
+    conn = sqlite3.connect("data/nifty100.db")
     c = conn.cursor()
     c.execute("SELECT COUNT(*) FROM peer_percentiles;")
     pp_count = c.fetchone()[0]

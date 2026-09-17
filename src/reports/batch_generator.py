@@ -22,7 +22,7 @@ def count_pdf_pages(filepath: str) -> int:
 
 
 def run_batch_tearsheet_generation(
-    db_path: str = "nifty100.db",
+    db_path: str = "data/nifty100.db",
     output_dir: str = "reports/tearsheets",
     skipped_csv: str = "output/skipped_tearsheets.csv",
 ) -> Tuple[List[str], List[Dict[str, Any]]]:
@@ -111,16 +111,69 @@ def run_batch_tearsheet_generation(
     return generated_files, skipped_records
 
 
+def run_radar_chart_batch(
+    db_path: str = "data/nifty100.db",
+    output_dir: str = "reports/radar_charts",
+) -> List[str]:
+    """Generates radar charts for all companies with peer percentiles."""
+    os.makedirs(output_dir, exist_ok=True)
+    conn = sqlite3.connect(db_path)
+    
+    # We need to make sure the peer_percentiles table exists.
+    try:
+        df_peers = pd.read_sql_query("SELECT * FROM peer_percentiles", conn)
+    except sqlite3.OperationalError:
+        print("peer_percentiles table not found. Skipping radar charts.")
+        conn.close()
+        return []
+        
+    conn.close()
+    
+    from src.analytics.radar_chart import generate_peer_radar_chart
+    generated = []
+    
+    for _, row in df_peers.iterrows():
+        cid = str(row.get("company_id", "")).strip()
+        c_name = str(row.get("company_name", cid)).strip()
+        
+        if not cid:
+            continue
+            
+        categories = ["ROE", "ROCE", "Low Debt", "NPM", "OPM", "FCF"]
+        vals = [
+            float(row.get("return_on_equity_pct_percentile", 50)),
+            float(row.get("roce_pct_percentile", 50)),
+            float(row.get("debt_to_equity_percentile", 50)),
+            float(row.get("net_profit_margin_pct_percentile", 50)),
+            float(row.get("operating_profit_margin_pct_percentile", 50)),
+            float(row.get("free_cash_flow_cr_percentile", 50)),
+        ]
+        
+        out_path = os.path.join(output_dir, f"{cid}_radar.png")
+        try:
+            generate_peer_radar_chart(c_name, categories, vals, output_path=out_path)
+            if os.path.exists(out_path):
+                generated.append(out_path)
+        except Exception as e:
+            print(f"Error generating radar chart for {cid}: {e}")
+            
+    print(f"Generated {len(generated)} radar charts in {output_dir}")
+    return generated
+
+
 def run_full_day34_batch():
-    """Runs batch tearsheets and 11 sector PDF reports."""
+    """Runs batch tearsheets, radar charts, and sector PDF reports."""
     print("--- Starting Batch Company Tearsheet Generation ---")
     tearsheet_files, skipped = run_batch_tearsheet_generation()
+
+    print("\n--- Starting Radar Chart Batch Generation ---")
+    radar_files = run_radar_chart_batch()
 
     print("\n--- Starting Sector Report Generation ---")
     sector_files = run_sector_reports()
 
     print(
-        f"\nDay 34 Complete! Generated {len(tearsheet_files)} company tearsheets and {len(sector_files)} sector PDFs."
+        f"\nDay 34/45 Complete! Generated {len(tearsheet_files)} tearsheets, {len(radar_files)} radar charts, and {len(sector_files)} sector PDFs."
     )
 
 

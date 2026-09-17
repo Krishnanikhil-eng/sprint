@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 class ScreenerEngine:
     """Core execution engine for stock screening operations."""
 
-    def __init__(self, db_path: str = "nifty100.db"):
+    def __init__(self, db_path: str = "data/nifty100.db"):
         self.db_path = db_path
         self.raw_data: Optional[pd.DataFrame] = None
         self.filtered_data: Optional[pd.DataFrame] = None

@@ -1,14 +1,15 @@
-.PHONY: help install load ratios test report dashboard api clean
+.PHONY: help install load ratios test report dashboard api batch clean
 
 help:
 	@echo "Available commands:"
 	@echo "  make install   - Install project dependencies"
 	@echo "  make load      - Execute full ETL database loader pipeline"
-	@echo "  make ratios    - Process and calculate financial ratios"
-	@echo "  make test      - Run complete pytest unit test suite"
 	@echo "  make report    - Run DQ validator and generate validation report"
-	@echo "  make dashboard - Prepare data layer for dashboard integration"
-	@echo "  make api       - Prepare API endpoint layer"
+	@echo "  make ratios    - Process financial ratios, peer rankings, and screener"
+	@echo "  make batch     - Generate all tearsheets, sector reports, and radar charts"
+	@echo "  make test      - Run complete pytest suite and generate HTML report"
+	@echo "  make dashboard - Launch the Streamlit dashboard"
+	@echo "  make api       - Launch the FastAPI server"
 	@echo "  make clean     - Clean temporary cache files"
 
 install:
@@ -17,20 +18,23 @@ install:
 load:
 	python -m src.etl.loader
 
-ratios:
-	python -m src.etl.loader
-
-test:
-	pytest
-
 report:
 	python -m src.etl.validator
 
+ratios:
+	python -m src.analytics.pipeline
+
+batch:
+	python -m src.reports.batch_generator
+
+test:
+	pytest --html=reports/pytest_report.html --self-contained-html
+
 dashboard:
-	@echo "Dashboard data layer initialized."
+	streamlit run src/dashboard/app.py
 
 api:
-	@echo "API foundation layer initialized."
+	uvicorn src.api.main:app --host 0.0.0.0 --port 8000
 
 clean:
 	python -c "import pathlib, shutil; [shutil.rmtree(p) for p in pathlib.Path('.').rglob('__pycache__')]; [shutil.rmtree(p) for p in pathlib.Path('.').rglob('.pytest_cache')]"

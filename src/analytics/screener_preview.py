@@ -8,7 +8,7 @@ import sqlite3
 import pandas as pd
 
 
-def run_screener_preview(db_path: str = "nifty100.db") -> pd.DataFrame:
+def run_screener_preview(db_path: str = "data/nifty100.db") -> pd.DataFrame:
     conn = sqlite3.connect(db_path)
 
     query = """

@@ -130,3 +130,22 @@ class ScreenerConfig:
         with open(json_path, "r", encoding="utf-8") as f:
             data = json.load(f)
         return cls.from_dict(data)
+
+    @classmethod
+    def from_yaml(cls, yaml_path: str) -> "ScreenerConfig":
+        import yaml
+
+        with open(yaml_path, "r", encoding="utf-8") as f:
+            data = yaml.safe_load(f)
+        return cls.from_dict(data)
+
+    @classmethod
+    def load_all_from_yaml(cls, yaml_path: str) -> List["ScreenerConfig"]:
+        import yaml
+
+        with open(yaml_path, "r", encoding="utf-8") as f:
+            data = yaml.safe_load(f)
+        
+        if "presets" in data:
+            return [cls.from_dict(p) for p in data["presets"]]
+        return [cls.from_dict(data)]

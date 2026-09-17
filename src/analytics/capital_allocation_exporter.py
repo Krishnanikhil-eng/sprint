@@ -11,7 +11,7 @@ from src.analytics.cashflow_kpis import classify_capital_allocation
 
 
 def export_capital_allocation(
-    db_path: str = "nifty100.db", output_path: str = "output/capital_allocation.csv"
+    db_path: str = "data/nifty100.db", output_path: str = "output/capital_allocation.csv"
 ) -> str:
     conn = sqlite3.connect(db_path)
 

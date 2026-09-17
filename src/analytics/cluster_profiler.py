@@ -16,7 +16,7 @@ import seaborn as sns
 
 from src.analytics.clustering import FinancialClusteringEngine, CLUSTERING_FEATURES
 
-DB_PATH_DEFAULT = "nifty100.db"
+DB_PATH_DEFAULT = "data/nifty100.db"
 LABELS_CSV_DEFAULT = "output/cluster_labels.csv"
 OUTLIER_CSV_DEFAULT = "output/outlier_report.csv"
 PORTFOLIO_STATS_CSV_DEFAULT = "output/portfolio_stats.csv"

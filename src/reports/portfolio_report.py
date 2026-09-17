@@ -21,7 +21,7 @@ from reportlab.platypus import (
 )
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 
-DB_PATH_DEFAULT = "nifty100.db"
+DB_PATH_DEFAULT = "data/nifty100.db"
 OUTPUT_PDF_DEFAULT = "reports/portfolio/portfolio_summary.pdf"
 
 

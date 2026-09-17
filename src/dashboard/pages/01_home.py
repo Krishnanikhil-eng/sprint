@@ -66,7 +66,7 @@ median_revenue_cagr = safe_median(ratios_df.get("revenue_cagr_5yr"))
 
 # Count debt-free companies (D/E < 0.1)
 if "debt_to_equity" in ratios_df.columns:
-    debt_free_count = len(ratios_df[ratios_df["debt_to_equity"].dropna() < 0.1])
+    debt_free_count = (ratios_df["debt_to_equity"] < 0.1).sum()
 else:
     debt_free_count = 0
 

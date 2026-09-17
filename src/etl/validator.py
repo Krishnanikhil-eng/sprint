@@ -703,7 +703,7 @@ class DataQualityValidator:
         return self.rule_statuses
 
     def validate_database(
-        self, db_path: Union[str, Path] = "nifty100.db"
+        self, db_path: Union[str, Path] = "data/nifty100.db"
     ) -> Dict[str, Dict[str, Any]]:
         """Runs validation directly on SQLite database tables."""
         conn = sqlite3.connect(db_path)
@@ -722,7 +722,7 @@ class DataQualityValidator:
 
 
 def validate_data(
-    data_source: Optional[Union[Dict[str, pd.DataFrame], str, Path]] = "nifty100.db"
+    data_source: Optional[Union[Dict[str, pd.DataFrame], str, Path]] = "data/nifty100.db"
 ):
     """
     Main entry point function for data validation.
@@ -732,7 +732,7 @@ def validate_data(
     if isinstance(data_source, dict):
         return validator.validate_tables(data_source)
     else:
-        db_p = Path(data_source) if data_source else Path("nifty100.db")
+        db_p = Path(data_source) if data_source else Path("data/nifty100.db")
         if db_p.exists() and db_p.stat().st_size > 0:
             return validator.validate_database(db_p)
         else:

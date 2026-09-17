@@ -143,7 +143,7 @@ def classify_capital_allocation(
 
 
 def run_cashflow_intelligence(
-    db_path: str = "nifty100.db",
+    db_path: str = "data/nifty100.db",
     output_excel: str = "output/cashflow_intelligence.xlsx",
     alerts_csv: str = "output/distress_alerts.csv",
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:

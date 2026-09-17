@@ -81,7 +81,7 @@ def load_excel(file_path: Union[str, Path, io.BytesIO]) -> pd.DataFrame:
 
 
 def load_data(
-    db_path: Union[str, Path] = "nifty100.db",
+    db_path: Union[str, Path] = "data/nifty100.db",
     data_dir: Union[str, Path] = "data",
     schema_path: Union[str, Path] = "db/schema.sql",
     output_dir: Union[str, Path] = "output",
@@ -136,8 +136,8 @@ def load_data(
         },
         {
             "table": "sectors",
-            "file": "supporting datasets/sectors.xlsx",
-            "is_zip": True,
+            "file": data_dir / "sectors.xlsx",
+            "is_zip": False,
         },
         {
             "table": "peer_groups",
@@ -330,6 +330,13 @@ def load_data(
         )
 
     conn.close()
+
+    # Copy to root for backward compatibility
+    import shutil
+    try:
+        shutil.copy(db_path, Path("nifty100.db"))
+    except Exception as e:
+        print(f"Warning: Could not copy DB to root: {e}")
 
     df_audit = pd.DataFrame(audit_logs)
     audit_csv_path = output_dir / "load_audit.csv"

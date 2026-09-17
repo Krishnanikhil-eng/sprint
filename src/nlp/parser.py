@@ -139,7 +139,7 @@ def validate_cagr_against_db(
 
 def process_analysis_file(
     excel_path: str = "data/analysis.xlsx",
-    db_path: str = "nifty100.db",
+    db_path: str = "data/nifty100.db",
     output_dir: str = "output",
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """

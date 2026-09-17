@@ -11,7 +11,7 @@ import pandas as pd
 from typing import Dict, Any
 
 
-def validate_bank_carveout_rules(db_path: str = "nifty100.db") -> Dict[str, Any]:
+def validate_bank_carveout_rules(db_path: str = "data/nifty100.db") -> Dict[str, Any]:
     conn = sqlite3.connect(db_path)
 
     ratios = pd.read_sql_query("SELECT * FROM financial_ratios", conn)

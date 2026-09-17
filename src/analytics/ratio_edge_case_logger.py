@@ -12,7 +12,7 @@ from src.etl.loader import load_excel
 
 
 def generate_ratio_edge_case_log(
-    db_path: str = "nifty100.db",
+    db_path: str = "data/nifty100.db",
     companies_file: str = "data/companies.xlsx",
     output_log_path: str = "output/ratio_edge_cases.log",
 ) -> str:

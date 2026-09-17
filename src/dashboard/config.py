@@ -79,4 +79,4 @@ PRESET_STRATEGIES = {
 }
 
 # Database path
-DB_PATH = "nifty100.db"
+DB_PATH = "data/nifty100.db"

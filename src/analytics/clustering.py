@@ -21,7 +21,7 @@ from typing import Tuple, Dict, Any
 from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import KMeans
 
-DB_PATH_DEFAULT = "nifty100.db"
+DB_PATH_DEFAULT = "data/nifty100.db"
 OUTPUT_CSV_DEFAULT = "output/cluster_labels.csv"
 ELBOW_PLOT_DEFAULT = "reports/elbow_plot.png"
 

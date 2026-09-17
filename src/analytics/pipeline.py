@@ -16,7 +16,7 @@ from src.analytics.manual_spot_check import run_manual_spot_checks
 from src.analytics.screener_preview import run_screener_preview
 
 
-def run_sprint2_pipeline(db_path: str = "nifty100.db") -> Dict[str, Any]:
+def run_sprint2_pipeline(db_path: str = "data/nifty100.db") -> Dict[str, Any]:
     print(
         "==================================================================================="
     )

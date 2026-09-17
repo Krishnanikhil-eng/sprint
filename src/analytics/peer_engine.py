@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 class PeerEngine:
     """Engine for peer group comparison and percentile rank computations."""
 
-    def __init__(self, db_path: str = "nifty100.db"):
+    def __init__(self, db_path: str = "data/nifty100.db"):
         self.db_path = db_path
         self.peer_groups_df: Optional[pd.DataFrame] = None
         self.ratios_df: Optional[pd.DataFrame] = None

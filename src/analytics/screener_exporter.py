@@ -25,7 +25,7 @@ class ScreenerExporter:
         os.makedirs(self.output_dir, exist_ok=True)
 
     def export_all_presets_to_excel(
-        self, file_name: str = "screener_results.xlsx"
+        self, file_name: str = "screener_output.xlsx"
     ) -> str:
         """
         Executes all 6 presets, calculates composite scores and sector ranks,

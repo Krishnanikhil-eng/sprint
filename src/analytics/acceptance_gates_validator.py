@@ -24,21 +24,21 @@ def run_acceptance_gates_validation():
     results = []
 
     # AC-01: SQLite Database Table Integrity
-    conn = sqlite3.connect("nifty100.db")
+    conn = sqlite3.connect("data/nifty100.db")
     tables = [r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()]
     conn.close()
     ac01_pass = len(tables) >= 10
     results.append(("AC-01", "SQLite Database Table Integrity (≥10 tables)", "PASS" if ac01_pass else "FAIL", f"Found {len(tables)} tables"))
 
     # AC-02: 92 Companies Metadata Coverage
-    conn = sqlite3.connect("nifty100.db")
+    conn = sqlite3.connect("data/nifty100.db")
     c_count = conn.execute("SELECT COUNT(*) FROM companies").fetchone()[0]
     conn.close()
     ac02_pass = c_count == 92
     results.append(("AC-02", "92 Nifty Companies Coverage", "PASS" if ac02_pass else "FAIL", f"Found {c_count} companies"))
 
     # AC-03: Financial Ratios Time Series Integrity
-    conn = sqlite3.connect("nifty100.db")
+    conn = sqlite3.connect("data/nifty100.db")
     r_count = conn.execute("SELECT COUNT(*) FROM financial_ratios").fetchone()[0]
     conn.close()
     ac03_pass = r_count >= 1000

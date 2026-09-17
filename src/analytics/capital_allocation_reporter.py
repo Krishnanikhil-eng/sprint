@@ -25,7 +25,7 @@ VALID_8_PATTERNS = {
 
 
 def process_capital_allocation_report(
-    db_path: str = "nifty100.db",
+    db_path: str = "data/nifty100.db",
     cap_alloc_csv: str = "output/capital_allocation.csv",
     dist_csv: str = "output/capital_allocation_distribution.csv",
     changes_csv: str = "output/pattern_changes.csv",

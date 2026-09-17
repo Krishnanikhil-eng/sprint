@@ -25,7 +25,7 @@ class PeerExporter:
         self.output_dir = output_dir
         os.makedirs(self.output_dir, exist_ok=True)
 
-    def export_peer_report(self, file_name: str = "peer_comparison_report.xlsx") -> str:
+    def export_peer_report(self, file_name: str = "peer_comparison.xlsx") -> str:
         """
         Calculates all peer percentiles, generates peer comparison sheets,
         and saves a formatted Excel workbook.

@@ -8,7 +8,7 @@ import sqlite3
 import pandas as pd
 
 
-def run_manual_spot_checks(db_path: str = "nifty100.db") -> bool:
+def run_manual_spot_checks(db_path: str = "data/nifty100.db") -> bool:
     conn = sqlite3.connect(db_path)
 
     pnl = pd.read_sql_query("SELECT * FROM profitandloss", conn)

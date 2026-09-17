@@ -8,7 +8,7 @@ import pandas as pd
 from pathlib import Path
 from typing import Dict
 
-DB_PATH = "nifty100.db"
+DB_PATH = "data/nifty100.db"
 
 
 def get_connection() -> sqlite3.Connection:
